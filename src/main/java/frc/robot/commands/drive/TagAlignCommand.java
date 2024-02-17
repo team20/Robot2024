@@ -11,8 +11,8 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.DriveSubsystem;
 
 /**
- * The {@code TagAlignCommand} rotates the robot to the mid point of the
- * detected AprilTags. It utilizes a {@code ProfiledPIDController} to maintain
+ * The {@code TagAlignCommand} rotates the robot to the primary in-view
+ * AprilTag. It utilizes a {@code ProfiledPIDController} to maintain
  * precision in the rotational movement.
  * 
  * @author Andrew Hwang (u.andrew.h@gmail.com)
@@ -56,7 +56,9 @@ public class TagAlignCommand extends Command {
 	 */
 	@Override
 	public void initialize() {
-		double heading = -m_driveSubsystem.getHeading().getDegrees(); // NEGATION if the heading data is negated
+		// double heading = -m_driveSubsystem.getHeading().getDegrees(); // NEGATION if
+		// the heading data is negated
+		double heading = m_driveSubsystem.getPose().getRotation().getDegrees();
 		double goal = heading;
 		var t = transformationToTagPosition();
 		if (t != null)
@@ -66,8 +68,8 @@ public class TagAlignCommand extends Command {
 	}
 
 	/**
-	 * Finds the transformation that maps the current robot pose to the mid point of
-	 * the detected AprilTags.
+	 * Finds the transformation that maps the current robot pose to the the primary
+	 * in-view AprilTag.
 	 * 
 	 * @return the transformation that maps the current robot pose to the mid point
 	 *         of the detected AprilTags
@@ -85,7 +87,9 @@ public class TagAlignCommand extends Command {
 	 */
 	@Override
 	public void execute() {
-		double heading = -m_driveSubsystem.getHeading().getDegrees(); // NEGATION if the heading data is negated
+		// double heading = -m_driveSubsystem.getHeading().getDegrees(); // NEGATION if
+		// the heading data is negated
+		double heading = m_driveSubsystem.getPose().getRotation().getDegrees();
 		double turnSpeed = m_turnController.calculate(heading);
 		turnSpeed = -turnSpeed; // NEGATION if positive turnSpeed = clockwise rotation
 		// turnSpeed = applyThreshold(turnSpeed, DriveConstants.kMinSpeed); // for

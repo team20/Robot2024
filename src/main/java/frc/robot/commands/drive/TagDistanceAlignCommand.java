@@ -1,13 +1,13 @@
 package frc.robot.commands.drive;
 
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.DriveSubsystem;
 
 /**
- * The {@code TagAlignCommand} rotates the robot to the mid point of all the
- * AprilTags detected by a {@code LimeLightSubsystem}. It utilizes a
- * {@code ProfiledPIDController} to
- * maintain precision in the rotational movement.
+ * The {@code TagDistanceAlignCommand} moves the robot so that the robot faces
+ * toward the primary in-view
+ * AprilTag and is away from the AprilTag by a specified distance.
  * 
  * @author Andrew Hwang (u.andrew.h@gmail.com)
  * @author Jeong-Hyon Hwang (jhhbrown@gmail.com)
@@ -15,13 +15,13 @@ import frc.robot.subsystems.DriveSubsystem;
 public class TagDistanceAlignCommand extends DriveCommand {
 
 	/**
-	 * Constructs a {@code TagAlignCommand}.
+	 * Constructs a {@code TagDistanceAlignCommand}.
 	 * 
 	 * @param driveSubsystem    the {@code DriveSubsystem} used by the
-	 *                          {@code TagAlignCommand}
+	 *                          {@code TagDistanceAlignCommand}
 	 * @param distanceToTag
-	 *                          the target distance between the robot and the in
-	 *                          meters which is tolerable
+	 *                          the target distance in meters between the robot and
+	 *                          the primary in-view AprilTag
 	 * @param distanceTolerance
 	 *                          the distance error in meters which is tolerable
 	 * @param angleTolerance
@@ -36,7 +36,12 @@ public class TagDistanceAlignCommand extends DriveCommand {
 			if (norm == 0)
 				return driveSubsystem.getPose();
 			translation = translation.times(1 - distanceToTag / norm);
-			return driveSubsystem.getPose().plus(new Transform2d(translation, transform.getRotation()));
+			var targetPose = driveSubsystem.getPose().plus(new Transform2d(translation, transform.getRotation()));
+			SmartDashboard.putString(
+					"drive",
+					String.format("transform to tag: %s, current pose: %s, target pose: %s", "" + transform,
+							"" + driveSubsystem.getPose(), "" + targetPose));
+			return targetPose;
 		}, distanceTolerance, angleTolerance);
 	}
 
