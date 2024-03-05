@@ -89,7 +89,7 @@ public class LimeLightEmulationSubsystem extends SubsystemBase {
 				this.previous = current;
 
 				table.getEntry("BotPose@Field")
-						.setDoubleArray(LimeLightSubsystem.Pose.toPose2DAdvantageScope(refined));
+						.setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(refined));
 				return refined;
 			}
 
@@ -276,7 +276,9 @@ public class LimeLightEmulationSubsystem extends SubsystemBase {
 			limelightTable.getEntry("botpose").setDoubleArray(p);
 			limelightTable.getEntry("json").setString(json(e.getKey(), e.getValue()));
 			limelightTable.getEntry("targetpose_robotspace").setDoubleArray(poseArray(e.getKey(), e.getValue()));
-		}
+		} else
+			limelightTable.getEntry("botpose")
+					.setDoubleArray(new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Math.random() });
 		m_pose = m_poseCalculator.pose(m_pose); // introduces a little delay
 	}
 
