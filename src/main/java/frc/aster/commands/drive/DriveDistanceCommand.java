@@ -61,13 +61,9 @@ public class DriveDistanceCommand extends Command {
 
 	public DriveDistanceCommand(Translation2d targetPosition, double distanceToTarget,
 			LimeLightSubsystem limeLieghLightSubsystem, double distanceTolerance) {
-		this(() -> distanceToTarget - limeLieghLightSubsystem.getDistance(targetPosition),
+		this(() -> distanceToTarget
+				- limeLieghLightSubsystem.transformationToward(targetPosition).getTranslation().getNorm(),
 				distanceTolerance);
-	}
-
-	public DriveDistanceCommand(String tagID, double distanceToTarget,
-			LimeLightSubsystem limeLieghLightSubsystem, double distanceTolerance) {
-		this(() -> limeLieghLightSubsystem.getDistance(tagID) - distanceToTarget, distanceTolerance);
 	}
 
 	/**

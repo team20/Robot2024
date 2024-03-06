@@ -74,12 +74,8 @@ public class TurnCommand extends Command {
 
 	public TurnCommand(Translation2d targetPosition,
 			LimeLightSubsystem limeLieghLightSubsystem, double angleTolerance) {
-		this(() -> limeLieghLightSubsystem.getRotation(targetPosition).getDegrees(), angleTolerance);
-	}
-
-	public TurnCommand(String tagID,
-			LimeLightSubsystem limeLieghLightSubsystem, double angleTolerance) {
-		this(() -> limeLieghLightSubsystem.getRotation(tagID).getDegrees(), angleTolerance);
+		this(() -> limeLieghLightSubsystem.transformationToward(targetPosition).getRotation().getDegrees(),
+				angleTolerance);
 	}
 
 	/**

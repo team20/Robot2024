@@ -5,7 +5,6 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -21,10 +20,12 @@ import frc.robot.Constants.ControllerConstants.Button;
 import frc.robot.commands.BangBangDriveDistance;
 import frc.robot.commands.PIDTurnCommand;
 import frc.robot.commands.SetSteering;
+import frc.robot.commands.drive.DriveCommand;
 import frc.robot.commands.drive.DriveDistanceCommand;
 import frc.robot.commands.drive.TagAlignCommand;
 import frc.robot.commands.drive.TagDistanceAlignCommand;
 import frc.robot.commands.drive.TurnCommand;
+import frc.robot.subsystems.AdvantageScopeUtil;
 import frc.robot.subsystems.ArduinoSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimeLightEmulationSubsystem;
@@ -40,6 +41,7 @@ import frc.robot.subsystems.PoseEstimationSubsystem;
  * commands, and button mappings) should be declared here.
  */
 public class RobotContainer implements frc.common.RobotContainer {
+
 	private final CommandGenericHID m_controller = new CommandGenericHID(ControllerConstants.kDriverControllerPort);
 	private final DriveSubsystem m_driveSubsystem = new DriveSubsystem();
 	protected final ArduinoSubsystem m_ArduinoSubsystem = new ArduinoSubsystem();
@@ -57,26 +59,20 @@ public class RobotContainer implements frc.common.RobotContainer {
 			var pose = estimatedPose();
 			table.getEntry("Pose Estimated").setString("" + pose);
 			if (pose != null)
-				table.getEntry("BotPose'").setDoubleArray(Pose.toPose2DAdvantageScope(pose));
+				table.getEntry("BotPose'").setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(pose));
 			table.getEntry("BotPose@Odometry")
-					.setDoubleArray(Pose.toPose2DAdvantageScope(m_driveSubsystem.getPose()));
+					.setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(m_driveSubsystem.getPose()));
 			table.getEntry("BotPose'@Odometry")
-					.setDoubleArray(Pose.toPose2DAdvantageScope(m_driveSubsystem.getPose()));
+					.setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(m_driveSubsystem.getPose()));
 			try {
-				pose = new Pose(m_botpose.value[0], m_botpose.value[1], m_botpose.value[5]);
-				table.getEntry("BotPose").setDoubleArray(Pose.toPose2DAdvantageScope(pose));
+				pose = new Pose(m_botpose[0], m_botpose[1], m_botpose[5]);
+				table.getEntry("BotPose").setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(pose));
+				double d1 = transformationTo(new Pose(-6.44, 3.5, -90)).getTranslation().getNorm();
+				double d2 = transformationTo(new Pose(-7.87, 1.45, 0)).getTranslation().getNorm();
+				table.getEntry("distances").setString(String.format("%.2f, %.2f", d1, d2));
+
 			} catch (Exception e) {
 			}
-		}
-
-		@Override
-		public void recordPose(String entryName, Pose2d value) {
-			RobotContainer.this.recordPose(entryName, value);
-		}
-
-		@Override
-		public void recordString(String entryName, String value) {
-			RobotContainer.this.recordString(entryName, value);
 		}
 
 	};
@@ -87,40 +83,12 @@ public class RobotContainer implements frc.common.RobotContainer {
 		if (value == null)
 			table.getEntry(entryName).setDoubleArray(new double[0]);
 		else
-			table.getEntry(entryName).setDoubleArray(Pose.toPose2DAdvantageScope(value.getX(),
-					value.getY(), value.getRotation().getDegrees()));
+			table.getEntry(entryName).setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(new Pose(value.getX(),
+					value.getY(), value.getRotation().getDegrees())));
 	}
 
 	public void recordString(String entryName, String value) {
 		table.getEntry(entryName).setString(value);
-	}
-
-	class DriveCommand extends frc.robot.commands.drive.DriveCommand { // more code for debugging
-
-		public DriveCommand(DriveSubsystem driveSubsystem, Pose2d targetPose, double distanceTolerance,
-				double angleTolerance) {
-			super(driveSubsystem, targetPose, distanceTolerance, angleTolerance);
-		}
-
-		public DriveCommand(DriveSubsystem driveSubsystem, Pose2d targetPose,
-				LimeLightSubsystem limeLightSubsystem, double distanceTolerance,
-				double angleTolerance) {
-			super(driveSubsystem,
-					() -> driveSubsystem.getPose().plus(targetPose.minus(limeLightSubsystem.estimatedPose())),
-					distanceTolerance, angleTolerance);
-		}
-
-		public DriveCommand(DriveSubsystem driveSubsystem, Translation2d targetPosition,
-				double distanceToTarget, LimeLightSubsystem limeLightSubsystem, double distanceTolerance,
-				double angleTolerance) {
-
-			super(driveSubsystem,
-					() -> driveSubsystem.getPose()
-							.plus(limeLightSubsystem.getTargetPose(targetPosition, distanceToTarget)
-									.minus(limeLightSubsystem.estimatedPose())),
-					distanceTolerance, angleTolerance);
-		}
-
 	}
 
 	/**
@@ -128,7 +96,7 @@ public class RobotContainer implements frc.common.RobotContainer {
 	 */
 	public RobotContainer() {
 		if (RobotBase.isSimulation())
-			new LimeLightEmulationSubsystem(new Pose(6, 1.45, 0), 0.01, m_driveSubsystem);
+			new LimeLightEmulationSubsystem(new Pose(-2, 0, 180), 0.01, m_driveSubsystem);
 
 		// Configure the button bindings
 		m_autoSelector.addOption("Test Steering", SetSteering.getCalibrationCommand(m_driveSubsystem));
@@ -136,8 +104,8 @@ public class RobotContainer implements frc.common.RobotContainer {
 		m_autoSelector.addOption("Bang Bang Drive 2 Meters", new BangBangDriveDistance(m_driveSubsystem, 2, 0.01));
 		// m_autoSelector.addOption("PID Drive 2 Meters",
 		// DriveDistanceCommand.create(m_driveSubsystem, 3.0, 0.01));
-		m_autoSelector.addOption("Knock Over Blocks",
-				CommandComposer.getBlocksAuto(m_driveSubsystem));
+		// m_autoSelector.addOption("Knock Over Blocks",
+		// CommandComposer.getBlocksAuto(m_driveSubsystem));
 
 		SmartDashboard.putData(m_autoSelector);
 		configureButtonBindings();
@@ -157,20 +125,39 @@ public class RobotContainer implements frc.common.RobotContainer {
 				() -> m_controller.getRawAxis(Axis.kLeftX),
 				() -> m_controller.getRawAxis(Axis.kRightTrigger),
 				() -> m_controller.getRawAxis(Axis.kLeftTrigger)));
-		m_controller.button(Button.kCircle).onTrue(m_driveSubsystem.resetHeadingCommand());
-		m_controller.button(Button.kTriangle).onTrue(m_driveSubsystem.alignModulesToZeroComamnd().withTimeout(0.5));
-		m_controller.button(Button.kSquare).onTrue(m_driveSubsystem.resetEncodersCommand());
+		// m_controller.button(Button.kTriangle).onTrue(m_driveSubsystem.resetHeadingCommand());
+		// m_controller.button(Button.kTriangle).onTrue(m_driveSubsystem.alignModulesToZeroComamnd().withTimeout(0.5));
+		// m_controller.button(Button.kSquare).onTrue(m_driveSubsystem.resetEncodersCommand());
 		// m_controller.button(Button.kX).onTrue(new
-		// DriveDistanceCommand(m_driveSubsystem, 10, 0.01));
+		// frc.robot.commands.DriveDistanceCommand(m_driveSubsystem, 10, 0.01));
 		Command[] samples = {
+				new DriveCommand(m_driveSubsystem, 1.0, 0, 0, 0.1, 5)
+						.andThen(new DriveCommand(m_driveSubsystem, 0, 1, 0, 0.1, 5))
+						.andThen(new DriveCommand(m_driveSubsystem, 0, 0, 90, 0.1, 5))
+						.andThen(new DriveCommand(m_driveSubsystem, -1, 1, -90, 0.1, 5)),
+				CommandComposer.getFiveScoreBlueAutoCommandOptimized(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleBlueAutoCommand(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleBlueAutoCommandOptimized(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleCenterBlueAutoCommand(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleCenterBlueAutoCommandOptimized(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleBottomBlueAutoCommand(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getFourScoreMiddleBottomBlueAutoCommandOptimized(m_driveSubsystem,
+						m_limeLightSubsystem),
+				CommandComposer.getAlignToBlueAmpCommand(m_driveSubsystem, m_limeLightSubsystem),
+				new DriveCommand(m_driveSubsystem, 1.0, 0, 0, 0.1, 5)
+						.andThen(new DriveCommand(m_driveSubsystem, 0, 1, 0, 0.1, 5))
+						.andThen(new DriveCommand(m_driveSubsystem, 0, 0, 45, 0.1, 5))
+						.andThen(new DriveCommand(m_driveSubsystem, -1, -1, -45, 0.1, 5)),
 				new TurnCommand(m_driveSubsystem, 45, 5)
 						.andThen(new TurnCommand(m_driveSubsystem, -45, 5)),
 				new DriveDistanceCommand(m_driveSubsystem, 1, 0.1)
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1)),
-				new DriveCommand(m_driveSubsystem, new Pose(1.0, 0, 0), 0.1, 5)
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(1, 1, 0), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(1, 1, 45), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(0, 0, 0), 0.1, 5)),
 				new TagAlignCommand(m_driveSubsystem, 5),
 				new TagDistanceAlignCommand(m_driveSubsystem, 2, 0.1, 5),
 				new TurnCommand(m_driveSubsystem, 45, 5)
@@ -180,47 +167,22 @@ public class RobotContainer implements frc.common.RobotContainer {
 						.andThen(new TurnCommand(m_driveSubsystem, 45, 5))
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, 1, 0.1))
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1))
-						.andThen(new TurnCommand(m_driveSubsystem, -45, 5)),
-				new DriveCommand(m_driveSubsystem, new Translation2d(7.87, 1.45),
-						1.2, m_limeLightSubsystem, 0.1, 5)
-								.andThen(new DriveCommand(m_driveSubsystem, new Pose(6.5, 0.0, 0), m_limeLightSubsystem,
-										0.1, 5))
-								.andThen(new DriveCommand(m_driveSubsystem, new Pose(6.0, 0.0, 0), m_limeLightSubsystem,
-										0.1, 5))
-								.andThen(new DriveCommand(m_driveSubsystem, new Translation2d(7.87,
-										1.45), 1.2, m_limeLightSubsystem,
-										0.1,
-										5))
-								.andThen(
-										new DriveCommand(m_driveSubsystem, new Pose(6.5, 1.45, 0), m_limeLightSubsystem,
-												0.1, 5))
-								.andThen(
-										new DriveCommand(m_driveSubsystem, new Pose(6.0, 1.45, 0), m_limeLightSubsystem,
-												0.1, 5))
-								.andThen(new DriveCommand(m_driveSubsystem, new Translation2d(7.87,
-										1.45), 1.2, m_limeLightSubsystem,
-										0.1,
-										5))
-								.andThen(
-										new DriveCommand(m_driveSubsystem, new Pose(6.5, 2.92, 0), m_limeLightSubsystem,
-												0.1, 5))
-								.andThen(
-										new DriveCommand(m_driveSubsystem, new Pose(6.0, 2.92, 0), m_limeLightSubsystem,
-												0.1, 5))
-								.andThen(new DriveCommand(m_driveSubsystem, new Translation2d(7.87,
-										1.45), 1.2, m_limeLightSubsystem,
-										0.1,
-										5)),
-				new DriveCommand(m_driveSubsystem, new Pose(0, 0, 0), 0.1, 5)
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(6.85, 3.0, 0), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(6, 3.0, 0), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(6.44, 3.5, 90), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(6.44, 3.7, 90), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(4.2, 1.5, -120), 0.1, 5))
-						.andThen(new DriveCommand(m_driveSubsystem, new Pose(0, 0, 0), 0.1, 5))
+						.andThen(new TurnCommand(m_driveSubsystem, -45, 5))
 		};
+		m_controller.button(Button.kSquare)
+				.whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem, null, null, null, null, null,
+						m_limeLightSubsystem, null, null, null));
 		m_controller.button(Button.kX)
-				.whileTrue(samples[2]);
+				.whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem, null, null, null, null, null,
+						m_limeLightSubsystem, null, null, null));
+		// m_controller.button(Button.kSquare)
+		// .whileTrue(CommandComposer.getAlignToClosestAmpCommand(m_driveSubsystem,
+		// m_limeLightSubsystem));
+		m_controller.button(Button.kCircle)
+				.whileTrue(CommandComposer.getMoveTowardClosestSpeakerCommand(1.5, m_driveSubsystem,
+						m_limeLightSubsystem));
+		m_controller.button(Button.kTriangle)
+				.whileTrue(samples[7]);
 	}
 
 	public Command getAutonomousCommand() {

@@ -6,15 +6,13 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.NetworkTableEvent;
-import edu.wpi.first.networktables.TimestampedDoubleArray;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * The purpose of the {@code PoseEstimationSubsystem} is to provide the pose of
@@ -152,7 +150,7 @@ public class PoseEstimationSubsystem extends LimeLightSubsystem {
 		 *         {@code PoseEstimator} is updated based on
 		 *         the specified {@code Pose2d}
 		 */
-		public final synchronized boolean update(Pose2d sample) {
+		public final boolean update(Pose2d sample) {
 			if (isOutlier(sample))
 				return false;
 			estimatedPose(sample);
@@ -352,7 +350,6 @@ public class PoseEstimationSubsystem extends LimeLightSubsystem {
 			@Override
 			public Pose2d pose(Pose2d pose) {
 				var current = poseSupplier.get();
-				recordPose(label, current);
 				if (this.previous == null || pose == null) {
 					this.previous = current;
 					return pose;
@@ -376,55 +373,54 @@ public class PoseEstimationSubsystem extends LimeLightSubsystem {
 	 *         degrees
 	 */
 	@Override
-	protected TimestampedDoubleArray changedBotPose(NetworkTableEvent event) {
+	protected double[] changedBotPose(NetworkTableEvent event) {
+		boolean validSample = false;
 		try {
 			var v = event.valueData.value;
-			m_botpose = new TimestampedDoubleArray(v.getTime(), v.getServerTime(), v.getDoubleArray());
+			m_botpose = v.getDoubleArray();
 			if (m_botpose != null) {
-				var pose = new Pose2d(m_botpose.value[0], m_botpose.value[1],
-						Rotation2d.fromDegrees(m_botpose.value[5]));
-				if (pose.getX() != 0 || pose.getY() != 0 || pose.getRotation().getDegrees() != 0)
-					m_poseEstimator.update(pose);
+				var pose = new Pose2d(m_botpose[0], m_botpose[1], Rotation2d.fromDegrees(m_botpose[5]));
+				if (Math.abs(pose.getX()) > 0.1 || Math.abs(pose.getY()) > 0.1) // if botpose seems reasonable
+					if (m_poseEstimator.update(pose))
+						validSample = true;
 			}
 			return m_botpose;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
+		} finally {
+			m_confidence = 0.96 * m_confidence + (validSample ? 0.04 : 0);
 		}
 	}
 
 	/**
-	 * Parses the specified JSON expression.
-	 * 
-	 * @param s a {@code String} containing a JSON expression
-	 * @return a {@code Map} that maps the ID of each recognized AprilTag to a
-	 *         {@code double} array representing the displacement from the camera to
-	 *         that AprilTag. Each {@code double} array contains the x and
-	 *         y-coordinate values and the yaw value (i.e., the orientation relative
-	 *         to the positive x-axis) in degrees of the displacement
-	 * @throws JsonMappingException    if a parsing error occurs
-	 * @throws JsonProcessingException if a parsing error occurs
+	 * Is called periodically by the {@link CommandScheduler}.
 	 */
-	protected static Map<String, double[]> toMap(String s) throws JsonMappingException, JsonProcessingException {
-		JsonNode n = new ObjectMapper().readTree(s);
-		n = n.path("Results").path("Fiducial");
-		var m = new TreeMap<String, double[]>();
-		n.forEach(e -> {
-			var i = e.path("t6t_cs").elements();
-			double v1 = i.next().asDouble();
-			i.next();
-			double v2 = i.next().asDouble();
-			i.next();
-			double v3 = i.next().asDouble();
-			var v = new double[] { v1, v2, v3 };
-			m.put(e.path("fID").toString(), v);
-		});
-		return m;
-	}
-
 	@Override
 	public void periodic() {
 		super.periodic();
 		m_poseEstimator.update(m_poseCalculators.values());
+		try {
+			SmartDashboard.putNumber("pose estimation: confidence",
+					confidence());
+			var pose = estimatedPose();
+			if (pose != null) // pose data that can be used by AdvantageScope
+				SmartDashboard.putNumberArray("pose estimation: pose estimated",
+						new double[] { pose.getX() + 8.27, pose.getY() + 4.05, pose.getRotation().getRadians() });
+			SmartDashboard.putNumber("pose estimation: rotation angle to the closest speaker (degrees)",
+					angleToClosestSpeaker());
+			SmartDashboard.putNumber("pose estimation: distance to the closest speaker (meters)",
+					distanceToClosestSpeaker());
+			if (DriverStation.getAlliance().isPresent()) {
+				Alliance alliance = DriverStation.getAlliance().get();
+				SmartDashboard.putNumber("pose estimation: rotation angle to " + alliance + " speaker (degrees)",
+						angleToSpeaker());
+				SmartDashboard.putNumber("pose estimation: distance to " + alliance + " speaker (meters)",
+						distanceToSpeaker());
+			}
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
 	}
+
 }

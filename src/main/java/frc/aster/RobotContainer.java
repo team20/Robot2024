@@ -7,7 +7,6 @@ package frc.aster;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.NetworkTable;
@@ -21,6 +20,7 @@ import frc.aster.commands.drive.DriveCommand;
 import frc.aster.commands.drive.DriveDistanceCommand;
 import frc.aster.commands.drive.TurnCommand;
 import frc.aster.subsystems.DriveSubsystem;
+import frc.robot.subsystems.AdvantageScopeUtil;
 import frc.robot.subsystems.LimeLightSubsystem;
 import frc.robot.subsystems.LimeLightSubsystem.Pose;
 import frc.robot.subsystems.PoseEstimationSubsystem;
@@ -44,30 +44,29 @@ public class RobotContainer implements frc.common.RobotContainer {
 			var pose = estimatedPose();
 			table.getEntry("Pose Estimated").setString("" + pose);
 			if (pose != null)
-				table.getEntry("BotPose'").setDoubleArray(Pose.toPose2DAdvantageScope(pose));
+				table.getEntry("BotPose'").setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(pose));
 			pose = m_driveSubsystem.getPose();
-			table.getEntry("BotPose@Odometry").setDoubleArray(Pose.toPose2DAdvantageScope(pose));
+			table.getEntry("BotPose@Odometry").setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(pose));
 			try {
-				pose = new Pose(m_botpose.value[0], m_botpose.value[1], m_botpose.value[5]);
-				table.getEntry("BotPose").setDoubleArray(Pose.toPose2DAdvantageScope(pose));
+				pose = new Pose(m_botpose[0], m_botpose[1], m_botpose[5]);
+				table.getEntry("BotPose").setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(pose));
 			} catch (Exception e) {
 			}
 		}
 
-		@Override
-		public void recordPose(String entryName, Pose2d value) {
-			if (value != null && !(value instanceof Pose))
-				value = new Pose(value.getX(), value.getY(), value.getRotation().getDegrees());
-			if (value == null)
-				table.getEntry(entryName).setDoubleArray(new double[0]);
-			else
-				table.getEntry(entryName).setDoubleArray(Pose.toPose2DAdvantageScope(value));
-		}
+		// public void recordPose(String entryName, Pose2d value) {
+		// if (value != null && !(value instanceof Pose))
+		// value = new Pose(value.getX(), value.getY(),
+		// value.getRotation().getDegrees());
+		// if (value == null)
+		// table.getEntry(entryName).setDoubleArray(new double[0]);
+		// else
+		// table.getEntry(entryName).setDoubleArray(AdvantageScopeUtil.toPose2DAdvantageScope(value));
+		// }
 
-		@Override
-		public void recordString(String entryName, String value) {
-			table.getEntry(entryName).setString(value);
-		}
+		// public void recordString(String entryName, String value) {
+		// table.getEntry(entryName).setString(value);
+		// }
 
 	};
 
@@ -100,17 +99,12 @@ public class RobotContainer implements frc.common.RobotContainer {
 				new TurnCommand(new Translation2d(8.308467, 1.442593),
 						m_limeLightSubsystem,
 						3),
-				new TurnCommand("4",
-						m_limeLightSubsystem,
-						3),
 				new TurnCommand(turnSupplier, 2)
 						.andThen(new DriveDistanceCommand(driveSupplier, 0.1)),
 				new DriveDistanceCommand(1, 0.2)
 						.andThen(new DriveDistanceCommand(-1, 0.2)),
 				new DriveDistanceCommand(new Translation2d(8.308467, 1.442593), 1.2,
 						m_limeLightSubsystem, 0.2),
-				new DriveDistanceCommand("4", 1.5,
-						m_limeLightSubsystem, 0.05),
 				new TurnCommand(new Translation2d(8.308467, 1.442593),
 						m_limeLightSubsystem,
 						3).andThen(

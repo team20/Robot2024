@@ -12,8 +12,6 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import frc.aster.subsystems.DriveSubsystem;
-import frc.robot.subsystems.PoseEstimationSubsystem;
 
 /**
  * The {@code DriveCommand} is responsible for moving the robot from the current
@@ -56,41 +54,13 @@ public class DriveCommand extends SequentialCommandGroup {
 	 * @param angleTolerance
 	 *                          the angle error in degrees which is tolerable
 	 */
-	public DriveCommand(Pose2d currentPose, Translation2d targetPosition, double distanceToTarget,
-			double distanceTolerance,
-			double angleTolerance) {
-		this(() -> {
-			return PoseEstimationSubsystem.getTargetPose(currentPose, targetPosition, distanceToTarget)
-					.minus(currentPose);
-		},
-				distanceTolerance,
-				angleTolerance);
-	}
-
-	/**
-	 * Constructs a new {@code DriveCommand} whose purpose is to navigate the robot
-	 * towards the specified target and stop at the specified distance
-	 * away from the target.
-	 * 
-	 * @param currentPose       the current {@code Pose2d} of the robot
-	 * @param targetPosition    the target position whose x and y-coordinate values
-	 *                          are in meters
-	 * @param distanceToTarget  the desired distance to the target
-	 * @param distanceTolerance
-	 *                          the distance error in meters which is tolerable
-	 * @param angleTolerance
-	 *                          the angle error in degrees which is tolerable
-	 */
 	public DriveCommand(Translation2d targetPosition, double distanceToTarget,
 			double distanceTolerance,
 			double angleTolerance) {
 		this(() -> {
-			var currentPose = DriveSubsystem.get().getPose();
-			var targetPose = PoseEstimationSubsystem.getTargetPose(currentPose, targetPosition, distanceToTarget);
-			var transform = targetPose
-					.minus(currentPose);
+			// var currentPose = DriveSubsystem.get().getPose();
+			Transform2d transform = null;
 			// PoseEstimationSubsystem.get().recordPose("Target@Odomoetry", targetPose);
-			System.out.println(targetPose);
 			SmartDashboard.putString("transform", "" + transform);
 			return transform;
 		},

@@ -78,9 +78,35 @@
       "title": "3D Field"
     },
     {
-      "type": 3,
-      "field": "NT:/AdvantageScope/drive",
-      "title": "Console"
+      "type": 1,
+      "legends": {
+        "left": {
+          "lockedRange": null,
+          "unitConversion": {
+            "type": null,
+            "factor": 1
+          },
+          "fields": [
+            {
+              "key": "NT:/SmartDashboard/pose estimation: confidence",
+              "color": "#2b66a2",
+              "show": true
+            }
+          ]
+        },
+        "discrete": {
+          "fields": []
+        },
+        "right": {
+          "lockedRange": null,
+          "unitConversion": {
+            "type": null,
+            "factor": 1
+          },
+          "fields": []
+        }
+      },
+      "title": "Line Graph"
     }
   ]
 }
