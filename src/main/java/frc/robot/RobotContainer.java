@@ -168,8 +168,9 @@ public class RobotContainer implements frc.common.RobotContainer {
 						.andThen(new TurnCommand(m_driveSubsystem, -45, 5))
 		};
 		m_controller.button(Button.kSquare)
-				.whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem, null, null, null, null, null,
-						m_limeLightSubsystem, null, null, null));
+				.whileTrue(
+						CommandComposer.getTwoMiddleFourScoreBlueCommand(m_driveSubsystem, null, null, null, null, null,
+								m_limeLightSubsystem, null, null, null));
 		m_controller.button(Button.kX)
 				.whileTrue(
 						CommandComposer.getTwoMiddleFourScoreRedCommand(m_driveSubsystem, null, null, null, null, null,
