@@ -171,8 +171,9 @@ public class RobotContainer implements frc.common.RobotContainer {
 				.whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem, null, null, null, null, null,
 						m_limeLightSubsystem, null, null, null));
 		m_controller.button(Button.kX)
-				.whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem, null, null, null, null, null,
-						m_limeLightSubsystem, null, null, null));
+				.whileTrue(
+						CommandComposer.getTwoMiddleFourScoreRedCommand(m_driveSubsystem, null, null, null, null, null,
+								m_limeLightSubsystem, null, null, null));
 		// m_controller.button(Button.kSquare)
 		// .whileTrue(CommandComposer.getAlignToClosestAmpCommand(m_driveSubsystem,
 		// m_limeLightSubsystem));
