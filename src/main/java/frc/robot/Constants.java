@@ -233,7 +233,8 @@ public final class Constants {
 	public static final class PoseConstants {
 		public static final Translation2d kBlueSpeakerPosition = new Translation2d(-7.87, 1.45);
 		public static final Pose kBlueAmpPose = new Pose(-6.44, 3.75, 90);
-		public static final Pose kBlueNoteOnePose = new Pose(-6.0 + 0.25, 2.82 - 0.25, 180 + 25);
+		// TODO: kBlueNoteOnePose y originally 2.82
+		public static final Pose kBlueNoteOnePose = new Pose(-6.0 + 0.25, 3.0 - 0.25, 180 + 25);
 		public static final Pose kBlueNoteTwoPose = new Pose(-6.0 + 0.15, 1.45, 180);
 		public static final Pose kBlueNoteThreePose = new Pose(-6.0 + 0.25, 0.0 + 0.25, 180 - 25);
 		public static final Pose kBlueCenterNoteOnePose = new Pose(-0.2, 3.2, 180);
