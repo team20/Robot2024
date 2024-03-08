@@ -169,7 +169,8 @@ public class RobotContainer implements frc.common.RobotContainer {
 		};
 		m_controller.button(Button.kSquare)
 				.whileTrue(
-						CommandComposer.getTwoMiddleFourScoreBlueCommand(m_driveSubsystem, null, null, null, null, null,
+						CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto(m_driveSubsystem, null, null, null, null,
+								null,
 								m_limeLightSubsystem, null, null, null));
 		m_controller.button(Button.kX)
 				.whileTrue(
