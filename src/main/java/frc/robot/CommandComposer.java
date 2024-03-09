@@ -701,4 +701,43 @@ public class CommandComposer {
 						indexerSubsystem, targeter, limeLightSubsystem));
 	}
 
+	public static Command getThreeScoreTwoMiddleTopBlueCommand(DriveSubsystem driveSubsystem,
+			SimpleVisionSubsystem visionSubsystem, FlywheelSubsystem flywheelSubsystem, AimerSubsystem aimerSubsystem,
+			IndexerSubsystem indexerSubsystem, Targeter targeter,
+			LimeLightSubsystem limeLightSubsystem, IntakeSubsystem intakeSubsystem,
+			PneumaticsSubsystem pneumaticsSubsystem, ArduinoSubsystem arduinoSubsystem) {
+		return pneumaticsSubsystem.downIntakeCommand()
+				.andThen(getPickUpNoteAtCommand(kBlueCenterNoteOnePose, driveSubsystem, visionSubsystem,
+						flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter, limeLightSubsystem,
+						intakeSubsystem, pneumaticsSubsystem, arduinoSubsystem).withTimeout(4))
+				.andThen(getShootToClosestSpeakerAtCommand(kBlueCenterNoteOnePose, driveSubsystem,
+						visionSubsystem, flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter,
+						limeLightSubsystem))
+				.andThen(getPickUpNoteAtCommand(kBlueCenterNoteTwoPose, driveSubsystem, visionSubsystem,
+						flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter, limeLightSubsystem,
+						intakeSubsystem, pneumaticsSubsystem, arduinoSubsystem).withTimeout(4))
+				.andThen(getShootToClosestSpeakerAtCommand(kBlueCenterNoteTwoPose, driveSubsystem,
+						visionSubsystem, flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter,
+						limeLightSubsystem));
+	}
+
+	public static Command getThreeScoreTwoMiddleTopRedCommand(DriveSubsystem driveSubsystem,
+			SimpleVisionSubsystem visionSubsystem, FlywheelSubsystem flywheelSubsystem, AimerSubsystem aimerSubsystem,
+			IndexerSubsystem indexerSubsystem, Targeter targeter,
+			LimeLightSubsystem limeLightSubsystem, IntakeSubsystem intakeSubsystem,
+			PneumaticsSubsystem pneumaticsSubsystem, ArduinoSubsystem arduinoSubsystem) {
+		return pneumaticsSubsystem.downIntakeCommand()
+				.andThen(getPickUpNoteAtCommand(kRedCenterNoteOnePose, driveSubsystem, visionSubsystem,
+						flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter, limeLightSubsystem,
+						intakeSubsystem, pneumaticsSubsystem, arduinoSubsystem).withTimeout(4))
+				.andThen(getShootToClosestSpeakerAtCommand(kRedCenterNoteOnePose, driveSubsystem,
+						visionSubsystem, flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter,
+						limeLightSubsystem))
+				.andThen(getPickUpNoteAtCommand(kRedCenterNoteTwoPose, driveSubsystem, visionSubsystem,
+						flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter, limeLightSubsystem,
+						intakeSubsystem, pneumaticsSubsystem, arduinoSubsystem).withTimeout(4))
+				.andThen(getShootToClosestSpeakerAtCommand(kRedCenterNoteTwoPose, driveSubsystem,
+						visionSubsystem, flywheelSubsystem, aimerSubsystem, indexerSubsystem, targeter,
+						limeLightSubsystem));
+	}
 }
