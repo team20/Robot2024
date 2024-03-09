@@ -84,13 +84,13 @@ public final class Constants {
 		public static final double kD = 0;
 		public static final double kIz = 5;
 
-		public static final double kDriveP = 1; // up to 1.0?
+		public static final double kDriveP = 0.4; // up to 1.0?
 		public static final double kDriveI = 0;
 		public static final double kDriveD = 0;
 		public static final double kDriveMaxVelocity = 3; // up to 5?
 		public static final double kDriveMaxAcceleration = 3; // up to 10?
 
-		public static final double kTurnP = 0.1; // was 0.005 upto 0.2?
+		public static final double kTurnP = 0.02; // was 0.005 upto 0.2?
 		public static final double kTurnI = 0; // was 0.003
 		public static final double kTurnD = 0; // 0.0
 		public static final double kTurnMaxVelocity = 120; // up to 240?
