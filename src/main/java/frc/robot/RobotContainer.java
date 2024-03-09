@@ -167,20 +167,63 @@ public class RobotContainer implements frc.common.RobotContainer {
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1))
 						.andThen(new TurnCommand(m_driveSubsystem, -45, 5))
 		};
+
+		// public static Command getFiveScoreBlueAutoCommand(DriveSubsystem
+		// driveSubsystem,
+		// SimpleVisionSubsystem visionSubsystem, FlywheelSubsystem flywheelSubsystem,
+		// AimerSubsystem aimerSubsystem,
+		// IndexerSubsystem indexerSubsystem, Targeter targeter,
+		// LimeLightSubsystem limeLightSubsystem, IntakeSubsystem intakeSubsystem,
+		// PneumaticsSubsystem pneumaticsSubsystem, ArduinoSubsystem arduinoSubsystem)
+
 		m_controller.button(Button.kSquare)
-				.whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem, null, null, null, null, null,
+				.whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem,
+						null, null, null, null,
+						null,
 						m_limeLightSubsystem, null, null, null));
 		m_controller.button(Button.kX)
-				.whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem, null, null, null, null, null,
+				.whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem,
+						null, null, null, null,
+						null,
 						m_limeLightSubsystem, null, null, null));
+		m_controller.button(Button.kCircle)
+				.whileTrue(CommandComposer.getFourScoreTwoMiddleTopBlueAuto(m_driveSubsystem,
+						null, null, null, null,
+						null,
+						m_limeLightSubsystem, null, null, null));
+		m_controller.button(Button.kTriangle)
+				.whileTrue(
+						CommandComposer.getFourScoreTwoMiddleTopRedAuto(m_driveSubsystem, null,
+								null, null, null, null,
+								m_limeLightSubsystem, null, null, null));
+
+		// m_controller.button(Button.kSquare)
+		// .whileTrue(CommandComposer.getThreeScoreOneMiddleTopBlueAuto(m_driveSubsystem,
+		// null, null, null, null,
+		// null,
+		// m_limeLightSubsystem, null, null, null));
+		// m_controller.button(Button.kX)
+		// .whileTrue(
+		// CommandComposer.getThreeScoreOneMiddleTopRedAuto(m_driveSubsystem, null,
+		// null, null, null, null,
+		// m_limeLightSubsystem, null, null, null));
+		// m_controller.button(Button.kSquare)
+		// .whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem,
+		// null, null, null, null, null,
+		// m_limeLightSubsystem, null, null, null));
+		// m_controller.button(Button.kX)
+		// .whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem, null,
+		// null, null, null, null,
+		// m_limeLightSubsystem, null, null, null));
 		// m_controller.button(Button.kSquare)
 		// .whileTrue(CommandComposer.getAlignToClosestAmpCommand(m_driveSubsystem,
 		// m_limeLightSubsystem));
-		m_controller.button(Button.kCircle)
-				.whileTrue(CommandComposer.getMoveTowardClosestSpeakerCommand(1.5, m_driveSubsystem,
-						m_limeLightSubsystem));
-		m_controller.button(Button.kTriangle)
-				.whileTrue(samples[7]);
+		// m_controller.button(Button.kCircle)
+		// .whileTrue(CommandComposer.getMoveTowardClosestSpeakerCommand(1.5,
+		// m_driveSubsystem,
+		// m_limeLightSubsystem));
+		// m_controller.button(Button.kTriangle)
+		// .whileTrue(samples[7]);
 	}
 
 	public Command getAutonomousCommand() {
