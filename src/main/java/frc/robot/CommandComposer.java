@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.TimedLEDCommand;
 import frc.robot.commands.aimshooter.AimHeightCommand;
@@ -584,6 +585,9 @@ public class CommandComposer {
 	}
 
 	public static Command getIntakeWithSensorCommand() {
+		// TODO: remove the code involving Robot.IsSimulation() in the competition code
+		if (frc.robot.Robot.isSimulation())
+			return new WaitCommand(0);
 		return sequence(
 				parallel(
 						new IndexWithSensorCommand(m_indexerSubsystem, 0.5),
@@ -615,6 +619,9 @@ public class CommandComposer {
 	}
 
 	public static Command getAimAndShootCommand() {
+		// TODO: remove the code involving Robot.IsSimulation() in the competition code
+		if (frc.robot.Robot.isSimulation())
+			return getTurnToClosestSpeakerCommand();
 		return sequence(
 				new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_PRESET_DEFAULT),
 				parallel(
@@ -631,6 +638,10 @@ public class CommandComposer {
 	}
 
 	public static Command getAimAndShootAuto() {
+		// TODO: remove the code involving Robot.IsSimulation() in the competition code
+		if (frc.robot.Robot.isSimulation())
+			return getAimAndShootCommand()
+					.withTimeout(2);
 		return sequence(
 				getAimAndShootCommand()
 						.withTimeout(2),
@@ -693,7 +704,6 @@ public class CommandComposer {
 
 	public static Command getPickUpNoteAtCommand(Pose2d targetPose) {
 		return DriveCommand
-				// TODO: originally .3
 				.alignTo(targetPose.plus(new Transform2d(0.6, 0, Rotation2d.fromDegrees(0))), 0.2, 5, m_driveSubsystem,
 						m_limeLightSubsystem)
 				.andThen(parallel(

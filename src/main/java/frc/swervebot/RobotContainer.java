@@ -14,8 +14,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
-import frc.robot.Constants.ControllerConstants;
-import frc.robot.Constants.ControllerConstants.Axis;
+import frc.robot.CommandComposer;
 import frc.robot.Robot;
 import frc.robot.commands.drive.DriveCommand;
 import frc.robot.commands.drive.DriveDistanceCommand;
@@ -25,7 +24,11 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimeLightEmulationSubsystem;
 import frc.robot.subsystems.LimeLightSubsystem;
 import frc.robot.subsystems.LimeLightSubsystem.Pose;
+import frc.robot.subsystems.PneumaticsSubsystem;
 import frc.robot.subsystems.PoseEstimationSubsystem;
+import frc.swervebot.Constants.ControllerConstants;
+import frc.swervebot.Constants.ControllerConstants.Axis;
+import frc.swervebot.Constants.ControllerConstants.Button;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -39,6 +42,7 @@ public class RobotContainer implements frc.common.RobotContainer {
 	private final CommandGenericHID m_controller = new CommandGenericHID(ControllerConstants.kDriverControllerPort);
 	private final DriveSubsystem m_driveSubsystem = new DriveSubsystem();
 	protected final ArduinoSubsystem m_ArduinoSubsystem = new ArduinoSubsystem();
+	private final PneumaticsSubsystem m_pneumaticsSubsystem = new PneumaticsSubsystem();
 	private final SendableChooser<Command> m_autoSelector = new SendableChooser<Command>();
 	// private final LimeLightSubsystem m_limeLightSubsystem = new
 	// LimeLightSubsystem() {
@@ -92,6 +96,10 @@ public class RobotContainer implements frc.common.RobotContainer {
 		if (RobotBase.isSimulation())
 			new LimeLightEmulationSubsystem(new Pose(-2, 0, 180), 0.01, m_driveSubsystem);
 
+		CommandComposer.setSubsystems(m_driveSubsystem, null, m_pneumaticsSubsystem, null,
+				null, null, null, null, null,
+				m_limeLightSubsystem);
+
 		// Configure the button bindings
 		// m_autoSelector.addOption("PID Drive 2 Meters",
 		// DriveDistanceCommand.create(m_driveSubsystem, 3.0, 0.01));
@@ -134,25 +142,16 @@ public class RobotContainer implements frc.common.RobotContainer {
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1)),
 		};
 		// m_controller.button(Button.kSquare)
-		// .whileTrue(CommandComposer.getFiveScoreBlueAutoCommand(m_driveSubsystem,
-		// null, null, null, null,
-		// null,
-		// m_limeLightSubsystem, null, null, null));
-		// m_controller.button(Button.kX)
-		// .whileTrue(CommandComposer.getFiveScoreRedAutoCommand(m_driveSubsystem,
-		// null, null, null, null,
-		// null,
-		// m_limeLightSubsystem, null, null, null));
-		// m_controller.button(Button.kCircle)
-		// .whileTrue(CommandComposer.getFourScoreTwoMiddleTopBlueAuto(m_driveSubsystem,
-		// null, null, null, null,
-		// null,
-		// m_limeLightSubsystem, null, null, null));
-		// m_controller.button(Button.kTriangle)
-		// .whileTrue(
-		// CommandComposer.getFourScoreTwoMiddleTopRedAuto(m_driveSubsystem, null,
-		// null, null, null, null,
-		// m_limeLightSubsystem, null, null, null));
+		// .whileTrue(samples[0]);
+		m_controller.button(Button.kSquare)
+				.whileTrue(CommandComposer.getFiveScoreBlueAuto());
+		m_controller.button(Button.kX)
+				.whileTrue(CommandComposer.getFiveScoreRedAuto());
+		m_controller.button(Button.kCircle)
+				.whileTrue(CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
+		m_controller.button(Button.kTriangle)
+				.whileTrue(
+						CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
 	}
 
 	public Command getAutonomousCommand() {

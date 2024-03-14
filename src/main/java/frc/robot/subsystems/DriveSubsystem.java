@@ -130,6 +130,9 @@ public class DriveSubsystem extends SubsystemBase {
 	 * @return The pose of the robot.
 	 */
 	public Pose2d getPose() {
+		// TODO: remove the code involving Robot.IsSimulation() in the competition code
+		if (frc.robot.Robot.isSimulation())
+			return new Pose2d(m_pose.getX(), m_pose.getY(), m_pose.getRotation().times(-1));
 		return m_pose;
 	}
 
