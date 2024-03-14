@@ -31,11 +31,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ControllerConstants;
-import frc.robot.Robot;
 import frc.robot.SwerveModule;
 
 public class DriveSubsystem extends SubsystemBase {
-
 	private final SwerveModule m_frontLeft;
 	private final SwerveModule m_frontRight;
 	private final SwerveModule m_backLeft;
@@ -45,7 +43,7 @@ public class DriveSubsystem extends SubsystemBase {
 			kFrontLeftLocation, kFrontRightLocation, kBackLeftLocation, kBackRightLocation);
 	private final SwerveDriveOdometry m_odometry;
 	private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
-
+	private double m_headingOffset = 0;
 	private Pose2d m_pose = new Pose2d(0, 0, new Rotation2d());
 	private Rotation2d m_heading = new Rotation2d(Math.PI / 2);
 	private final Field2d m_field = new Field2d();
@@ -81,6 +79,15 @@ public class DriveSubsystem extends SubsystemBase {
 	}
 
 	/**
+	 * Sets a gyro offset.
+	 * 
+	 * @param angle The angle to offset gyro readings (CCW+).
+	 */
+	public void setHeadingOffset(double angle) {
+		m_headingOffset = angle;
+	}
+
+	/**
 	 * Gets the robot's heading from the gyro.
 	 * 
 	 * @return The heading
@@ -89,7 +96,7 @@ public class DriveSubsystem extends SubsystemBase {
 		if (RobotBase.isSimulation()) {
 			return m_heading;
 		}
-		return Rotation2d.fromDegrees(-m_gyro.getYaw());
+		return Rotation2d.fromDegrees(-m_gyro.getYaw() + m_headingOffset);
 	}
 
 	/**
@@ -123,8 +130,6 @@ public class DriveSubsystem extends SubsystemBase {
 	 * @return The pose of the robot.
 	 */
 	public Pose2d getPose() {
-		if (Robot.isSimulation()) // NECESSARY to behave like the swervebot
-			return new Pose2d(m_pose.getX(), m_pose.getY(), m_pose.getRotation().times(-1));
 		return m_pose;
 	}
 
@@ -143,7 +148,8 @@ public class DriveSubsystem extends SubsystemBase {
 		if (RobotBase.isSimulation()) {
 			updateSimPose(speeds);
 		}
-		SmartDashboard.putNumber("Heading", getHeading().getRadians());
+		SmartDashboard.putNumber("Heading Radians", getHeading().getRadians());
+		SmartDashboard.putNumber("Heading Degrees", getHeading().getDegrees());
 
 		SwerveModuleState[] states = m_kinematics.toSwerveModuleStates(speeds);
 		SwerveDriveKinematics.desaturateWheelSpeeds(states, kMaxSpeed);
@@ -172,6 +178,13 @@ public class DriveSubsystem extends SubsystemBase {
 	 */
 	public void stopDriving() {
 		setModuleStates(calculateModuleStates(new ChassisSpeeds(0, 0, 0), true));
+	}
+
+	public void setRampRate(double rampRate) {
+		m_backLeft.setRampRate(rampRate);
+		m_backRight.setRampRate(rampRate);
+		m_frontLeft.setRampRate(rampRate);
+		m_frontRight.setRampRate(rampRate);
 	}
 
 	/**
@@ -217,6 +230,20 @@ public class DriveSubsystem extends SubsystemBase {
 		m_backRight.setAngle(angle);
 	}
 
+	public void setModuleStatesDirect(SwerveModuleState moduleState) {
+		m_frontLeft.setModuleState(moduleState);
+		m_frontRight.setModuleState(moduleState);
+		m_backLeft.setModuleState(moduleState);
+		m_backRight.setModuleState(moduleState);
+	}
+
+	public void setModuleSpeeds(double speed) {
+		m_frontLeft.setSpeed(speed);
+		m_frontRight.setSpeed(speed);
+		m_backLeft.setSpeed(speed);
+		m_backRight.setSpeed(speed);
+	}
+
 	/**
 	 * Sets module states for each swerve module.
 	 * 
@@ -232,6 +259,7 @@ public class DriveSubsystem extends SubsystemBase {
 	@Override
 	public void periodic() {
 		SmartDashboard.putNumber("Current Position", getModulePositions()[0].distanceMeters);
+		SmartDashboard.putNumber("Heading Degrees", getHeading().getDegrees());
 		if (RobotBase.isReal()) {
 			m_pose = m_odometry.update(getHeading(), getModulePositions());
 			m_posePublisher.set(m_pose);
@@ -247,6 +275,10 @@ public class DriveSubsystem extends SubsystemBase {
 		SmartDashboard.putNumber("Drive BR steer current", m_backRight.getSteerCurrent());
 		SmartDashboard.putNumber("Drive BL steer current", m_backLeft.getSteerCurrent());
 		SmartDashboard.putNumber("Drive FL steer current", m_frontLeft.getSteerCurrent());
+		SmartDashboard.putNumber("Back Right Current", m_backRight.getDriveCurrent());
+		SmartDashboard.putNumber("Back Left Current", m_backLeft.getDriveCurrent());
+		SmartDashboard.putNumber("Front Right Current", m_frontRight.getDriveCurrent());
+		SmartDashboard.putNumber("Front Left Current", m_frontLeft.getDriveCurrent());
 	}
 
 	/**
@@ -259,12 +291,46 @@ public class DriveSubsystem extends SubsystemBase {
 		return run(() -> {
 			// Get the forward, strafe, and rotation speed, using a deadband on the joystick
 			// input so slight movements don't move the robot
-			double fwdSpeed = -0.8 * MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
-			double strSpeed = -0.8 * MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
-			double rotSpeed = 0.6 * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
+			double rotSpeed = kTeleopMaxTurnSpeed * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
 					ControllerConstants.kDeadzone);
+			rotSpeed = Math.signum(rotSpeed) * (rotSpeed * rotSpeed);
+			double fwdSpeed = kTeleopMaxSpeed
+					* MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
+			fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
+			double strSpeed = kTeleopMaxSpeed
+					* MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
+			strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
 			setModuleStates(calculateModuleStates(new ChassisSpeeds(fwdSpeed, strSpeed, rotSpeed), true));
-		});
+		}).withName("DefaultDriveCommand");
+	}
+
+	/**
+	 * Creates a command to drive the robot with joystick input in robot oriented
+	 * controls.
+	 * 
+	 * @return A command to drive the robot.
+	 */
+	public Command robotOrientedDriveCommand(Supplier<Double> forwardSpeed, Supplier<Double> strafeSpeed,
+			Supplier<Double> rotationRight, Supplier<Double> rotationLeft) {
+		return run(() -> {
+			// Get the forward, strafe, and rotation speed, using a deadband on the joystick
+			// input so slight movements don't move the robot
+			double rotSpeed = kTeleopMaxTurnSpeed * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
+					ControllerConstants.kDeadzone);
+			rotSpeed = Math.signum(rotSpeed) * (rotSpeed * rotSpeed);
+			double fwdSpeed = kTeleopMaxSpeed
+					* MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
+			fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
+			double strSpeed = kTeleopMaxSpeed
+					* MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
+			strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
+			setModuleStates(calculateModuleStates(new ChassisSpeeds(fwdSpeed, strSpeed, rotSpeed), false));
+			if (fwdSpeed > 0.2 || rotSpeed > 0.2 || strSpeed > 0.2) {
+				setRampRate(.3);
+			} else {
+				setRampRate(0.1);
+			}
+		}).withName("RobotOrientedDriveCommand");
 	}
 
 	/**
@@ -274,6 +340,10 @@ public class DriveSubsystem extends SubsystemBase {
 	 */
 	public Command resetHeadingCommand() {
 		return runOnce(m_gyro::zeroYaw);
+	}
+
+	public Command offsetGyroCommand(double angle) {
+		return runOnce(() -> setHeadingOffset(angle));
 	}
 
 	/**
@@ -301,5 +371,4 @@ public class DriveSubsystem extends SubsystemBase {
 			setModuleStates(0, 0, 0, false);
 		}).raceWith(Commands.waitSeconds(5));
 	}
-
 }

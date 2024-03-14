@@ -39,6 +39,7 @@ public class AimerSubsystem extends SubsystemBase {
 		SparkLimitSwitch reverseSwitch = m_neoAimer.getReverseLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen);
 		reverseSwitch.enableLimitSwitch(true);
 		m_controller.setTolerance(AimerConstants.kAimerTolerance);
+		this.setAimerHeight(kDefaultActuatorHeight);
 	}
 
 	public void periodic() {

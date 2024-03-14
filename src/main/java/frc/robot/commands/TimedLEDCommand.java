@@ -4,28 +4,28 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.ArduinoSubsystem;
+import frc.robot.subsystems.ArduinoSubsystem.StatusCode;
 
-public class DriveTimeCommand extends Command {
-	private DriveSubsystem m_driveSubsystem;
-	private double m_seconds;
+public class TimedLEDCommand extends Command {
+	private final ArduinoSubsystem m_arduinoSubsystem;
+	private final double m_seconds;
 	private final Timer m_timer = new Timer();
-	private final double m_speed;
+	private final StatusCode m_statusCode;
 
 	/**
-	 * Creates a new DriveTimeCommand.
+	 * Creates a new TimedLEDCommand.
 	 * 
-	 * @param subsystem The subsystem
-	 * @param seconds   Time to drive in seconds
-	 * @param speed     The speed in percent output
+	 * @param subsystem  The subsystem
+	 * @param seconds    Time to drive in seconds
+	 * @param statusCode The LED pattern to display
 	 */
-	public DriveTimeCommand(DriveSubsystem subsystem, double seconds, double speed) {
-		m_driveSubsystem = subsystem;
+	public TimedLEDCommand(ArduinoSubsystem subsystem, double seconds, StatusCode statusCode) {
+		m_arduinoSubsystem = subsystem;
 		m_seconds = seconds;
-		m_speed = speed;
+		m_statusCode = statusCode;
 		addRequirements(subsystem);
 	}
 
@@ -38,13 +38,13 @@ public class DriveTimeCommand extends Command {
 	// Called every time the scheduler runs while the command is scheduled.
 	@Override
 	public void execute() {
-		m_driveSubsystem.calculateModuleStates(new ChassisSpeeds(m_speed, 0, 0), true);
+		m_arduinoSubsystem.setCode(m_statusCode);
 	}
 
 	// Called once the command ends or is interrupted.
 	@Override
 	public void end(boolean interrupted) {
-		m_driveSubsystem.stopDriving();
+		m_arduinoSubsystem.setCode(StatusCode.DEFAULT);
 	}
 
 	// Returns true when the command should end.

@@ -1,12 +1,11 @@
-package frc.robot.commands;
+package frc.robot.commands.drive;
 
 import static frc.robot.Constants.DriveConstants.*;
 
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.DriveSubsystem;
 
-public class BangBangDriveDistance extends Command {
+public class BangBangDriveDistanceCommand extends Command {
 	private final DriveSubsystem m_driveSubsystem;
 	private double m_target; // if distance, in meters; if angle, in degrees
 	private double m_amount;
@@ -18,7 +17,7 @@ public class BangBangDriveDistance extends Command {
 	 * @param amount
 	 *               amount is distance in meters
 	 */
-	public BangBangDriveDistance(DriveSubsystem subsystem, double amount, double tolerance) {
+	public BangBangDriveDistanceCommand(DriveSubsystem subsystem, double amount, double tolerance) {
 		m_driveSubsystem = subsystem;
 		m_amount = amount;
 		m_tolerance = tolerance;
@@ -31,7 +30,7 @@ public class BangBangDriveDistance extends Command {
 	 * @param amount
 	 *               amount is distance in meters
 	 */
-	public BangBangDriveDistance(DriveSubsystem subsystem, double amount) {
+	public BangBangDriveDistanceCommand(DriveSubsystem subsystem, double amount) {
 		m_driveSubsystem = subsystem;
 		m_amount = amount;
 		m_tolerance = 0.1;
@@ -69,7 +68,7 @@ public class BangBangDriveDistance extends Command {
 	public boolean isFinished() {
 		// Determine whether the target distance has been reached
 		double diff = getDiff();
-		SmartDashboard.putNumber("diff", diff);
+		// SmartDashboard.putNumber("diff", diff);
 		return diff < m_tolerance;
 	}
 

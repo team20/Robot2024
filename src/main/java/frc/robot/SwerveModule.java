@@ -21,7 +21,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 /**
  * Contains all the hardware and controllers for a swerve module.
  */
-public class SwerveModule implements AutoCloseable {
+public class SwerveModule {
 	private final PIDController m_PIDController = new PIDController(kP, kI, kD);
 	private final CANcoder m_CANCoder;
 	private final CANSparkMax m_driveMotor;
@@ -34,24 +34,11 @@ public class SwerveModule implements AutoCloseable {
 		m_steerMotor = new CANSparkMax(steerPort, MotorType.kBrushless);
 		m_PIDController.setIZone(kIz);
 		m_driveEncoder = m_driveMotor.getEncoder();
-		configMotorController(m_driveMotor, kDriveSmartCurrentLimit, kDrivePeakCurrentLimit);
-		configMotorController(m_steerMotor, kSteerSmartCurrentLimit, kSteerPeakCurrentLimit);
+		configMotorController(m_driveMotor, kDrivePeakCurrentLimit);
+		configMotorSteerController(m_steerMotor, kSteerSmartCurrentLimit, kSteerPeakCurrentLimit);
 		m_PIDController.enableContinuousInput(0, 360);
 		m_driveMotor.setOpenLoopRampRate(kRampRate);
-	}
-
-	@Override
-	public void close() {
-		m_CANCoder.close();
-		m_driveMotor.close();
-		m_steerMotor.close();
-		m_PIDController.close();
-	}
-
-	@Override
-	public String toString() {
-		return String.format("[encoder position: %.1f, angle: %.1f degrees]", getDriveEncoderPosition(),
-				getModuleAngle());
+		m_driveMotor.setClosedLoopRampRate(kRampRate);
 	}
 
 	/**
@@ -59,7 +46,20 @@ public class SwerveModule implements AutoCloseable {
 	 * 
 	 * @param motorController The CANSparkMax to configure
 	 */
-	private void configMotorController(CANSparkMax motorController, int smartCurrentLimit, int peakCurrentLimit) {
+	private void configMotorController(CANSparkMax motorController, int peakCurrentLimit) {
+		motorController.restoreFactoryDefaults();
+		motorController.setIdleMode(IdleMode.kBrake);
+		motorController.enableVoltageCompensation(12);
+		// motorController.setSmartCurrentLimit(smartCurrentLimit);
+		motorController.setSecondaryCurrentLimit(peakCurrentLimit);
+	}
+
+	/**
+	 * Configures our motors with the exact same settings
+	 * 
+	 * @param motorController The CANSparkMax to configure
+	 */
+	private void configMotorSteerController(CANSparkMax motorController, int smartCurrentLimit, int peakCurrentLimit) {
 		motorController.restoreFactoryDefaults();
 		motorController.setIdleMode(IdleMode.kBrake);
 		motorController.enableVoltageCompensation(12);
@@ -78,6 +78,10 @@ public class SwerveModule implements AutoCloseable {
 
 	public double getSteerCurrent() {
 		return m_steerMotor.getOutputCurrent();
+	}
+
+	public double getDriveCurrent() {
+		return m_driveMotor.getOutputCurrent();
 	}
 
 	/**
@@ -162,9 +166,18 @@ public class SwerveModule implements AutoCloseable {
 		m_steerMotor.set(out);
 	}
 
+	public void setSpeed(double speed) {
+		m_driveMotor.set(speed);
+	}
+
 	public void setIdleMode(IdleMode mode) {
 		m_driveMotor.setIdleMode(mode);
 		m_steerMotor.setIdleMode(mode);
+	}
+
+	public void setRampRate(double rampRate) {
+		m_driveMotor.setOpenLoopRampRate(rampRate);
+		m_driveMotor.setClosedLoopRampRate(rampRate);
 	}
 
 }

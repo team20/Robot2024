@@ -18,11 +18,11 @@ public class ArduinoSubsystem extends SubsystemBase {
 	public enum StatusCode {
 		RESET((byte) 0),
 		RAINBOW_PARTY_FUN_TIME((byte) 1),
-		BLINKING_NOTE((byte) 2),
-		BLINKING_WHITE((byte) 3),
-		SOLID_BLUE((byte) 4),
-		SOLID_YELLOW((byte) 5),
-		SOLID_PURPLE((byte) 6),
+		SOLID_ORANGE((byte) 2),
+		SOLID_BLUE((byte) 3),
+		BLINKING_YELLOW((byte) 5),
+		BLINKING_PURPLE((byte) 6),
+		BLINKING_RED((byte) 7),
 		DEFAULT((byte) 20);
 
 		public byte code;

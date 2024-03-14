@@ -24,13 +24,14 @@ public interface Targeter {
 		public double getRPM(double distanceMeters) {
 			// Calculated using regression from experimentally determined constants
 			// Determined with spreadsheet ____
-			double RPM = 1 * distanceMeters * 1; // TODO get regression math
+			double RPM = 1 * distanceMeters * 1;
 			return RPM;
 		}
 
 		public double calcAimerHeightFromDistance(double distanceMeters) {
 			// get actuator height from getAngle method above
 			double aimerHeight = getAngle(distanceMeters) / 360;
+			System.err.print("NONONONONO");
 			return aimerHeight;
 		}
 	}

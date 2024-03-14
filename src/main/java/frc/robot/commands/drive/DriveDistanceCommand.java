@@ -1,181 +1,74 @@
 package frc.robot.commands.drive;
 
-import java.util.function.Supplier;
-
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Constants;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.subsystems.DriveSubsystem;
 
-/**
- * The {@code DriveDistanceCommand} is responsible for moving the robot by a
- * specified distance. It utilizes two {@code ProfiledPIDController}s to
- * precisely control the left and right wheels.
- * 
- * @author Andrew Hwang (u.andrew.h@gmail.com)
- * @author Jeong-Hyon Hwang (jhhbrown@gmail.com)
- */
 public class DriveDistanceCommand extends Command {
+	private final DriveSubsystem m_driveSubsystem;
+	private double m_amount;
+	private ProfiledPIDController m_controller = new ProfiledPIDController(0.1, 0.02, 0,
+			new Constraints(3, 2));
 
-	/**
-	 * The {@code DriveSubsystem} used by this {@code DriveDistanceCommand}.
-	 */
-	private DriveSubsystem m_driveSubsystem;
-
-	/**
-	 * The {@code Supplier<Double>} that calculates the target distance in meters
-	 * that the robot should move.
-	 * This is used at the commencement of this {@code DriveDistanceCommand} (i.e.,
-	 * when the scheduler begins to periodically execute this {@code
-	 * DriveDistanceCommand}).
-	 */
-	private Supplier<Double> m_targetDistanceSupplier;
-
-	/**
-	 * The {@code ProfiledPIDController} for controlling the left wheels.
-	 */
-	private ProfiledPIDController m_controller;
-
-	/**
-	 * The position of the robot at the commencement of this
-	 * {@code DriveDistanceCommand} (i.e.,
-	 * when the scheduler begins to periodically execute this {@code
-	 * DriveDistanceCommand}).
-	 */
-	private Translation2d m_startPosition;
-
-	/**
-	 * Constructs a new {@code DriveDistanceCommand} whose purpose is to move the
-	 * robot by the specified distance.
+	/***
+	 * Autonomous command to drive straight
 	 * 
-	 * @param driveSubsystem    the {@code DriveSubsystem} to be used by the
-	 *                          {@code DriveDistanceCommand}
-	 * @param targetDistance
-	 *                          the target distance in meters that the robot should
-	 *                          move
-	 * @param distanceTolerance
-	 *                          the distance error in meters which is tolerable
+	 * @param amount
+	 *               amount is distance in meters
 	 */
-	public DriveDistanceCommand(DriveSubsystem driveSubsystem, double targetDistance, double distanceTolerance) {
-		this(driveSubsystem, () -> targetDistance, distanceTolerance);
+	public DriveDistanceCommand(DriveSubsystem subsystem, double amount, double tolerance) {
+		m_driveSubsystem = subsystem;
+		m_amount = amount;
+		m_controller.setTolerance(tolerance);
+		m_controller.setIZone(0.4);
+		addRequirements(subsystem);
 	}
 
-	/**
-	 * Constructs a new {@code DriveDistanceCommand} whose purpose is to move the
-	 * robot by the specified distance.
-	 * 
-	 * @param driveSubsystem         the {@code DriveSubsystem} to be used by the
-	 *                               {@code DriveDistanceCommand}
-	 * @param targetDistanceSupplier
-	 *                               a {@code Supplier<Double>} that calculates
-	 *                               the target distance in meters that the robot
-	 *                               should
-	 *                               move (used when the scheduler begins to
-	 *                               periodically execute this
-	 *                               {@code DriveDistanceCommand})
-	 * 
-	 * @param distanceTolerance      the distance error in meters which is
-	 *                               tolerable
-	 */
-	public DriveDistanceCommand(DriveSubsystem driveSubsystem, Supplier<Double> targetDistanceSupplier,
-			double distanceTolerance) {
-		m_driveSubsystem = driveSubsystem;
-		m_targetDistanceSupplier = targetDistanceSupplier;
-		var constraints = new TrapezoidProfile.Constraints(Constants.DriveConstants.kDriveMaxVelocity,
-				Constants.DriveConstants.kDriveMaxAcceleration);
-		m_controller = new ProfiledPIDController(Constants.DriveConstants.kDriveP, Constants.DriveConstants.kDriveI,
-				Constants.DriveConstants.kDriveD, constraints);
-		m_controller.setTolerance(distanceTolerance);
-		addRequirements(m_driveSubsystem);
+	public static SequentialCommandGroup create(DriveSubsystem subsystem, double amount, double tolerance) {
+		return new SequentialCommandGroup(
+				new SetSteeringCommand(subsystem, 0),
+				new DriveDistanceCommand(subsystem, amount, tolerance));
 	}
 
-	/**
-	 * Is invoked at the commencement of this {@code DriveDistanceCommand} (i.e,
-	 * when the scheduler begins to periodically execute this
-	 * {@code DriveDistanceCommand}).
-	 */
+	public static SequentialCommandGroup create(DriveSubsystem subsystem, double amount) {
+		return new SequentialCommandGroup(
+				new SetSteeringCommand(subsystem, 0),
+				new DriveDistanceCommand(subsystem, amount, 0.1));
+	}
+
 	@Override
 	public void initialize() {
-		m_startPosition = m_driveSubsystem.getPose().getTranslation();
-		double targetDistance = 0;
-		try {
-			targetDistance += m_targetDistanceSupplier.get();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		m_controller.reset(0);
-		m_controller.setGoal(targetDistance);
+		double currentPosition = m_driveSubsystem.getPose().getX();
+		// With optimize off, encoder distance always increases
+		// m_target = currentPosition + Math.abs(m_amount);
+		// m_targetDirection = Math.signum(m_amount);
 
-		var pose = m_driveSubsystem.getPose();
-		SmartDashboard.putString("drive",
-				String.format(
-						"distance: initialize - current distance: %.1f, target distance: %.1f, current pose: %s",
-						0.0,
-						m_controller.getGoal().position, "" + pose));
+		m_controller.reset(currentPosition);
+		m_controller.setGoal(currentPosition + m_amount);
 	}
 
-	/**
-	 * Is invoked periodically by the scheduler until this
-	 * {@code DriveDistanceCommand} is either ended or interrupted.
-	 */
 	@Override
 	public void execute() {
-		double distance = travelDistance();
-		double speed = m_controller.calculate(distance);
-		// speed = TurnCommand.applyThreshold(speed, DriveConstants.kMinSpeed); // for
-		// convergence
-		m_driveSubsystem.setModuleStates(speed, 0, 0, false);
-		SmartDashboard.putString("drive",
-				String.format(
-						"distance: execute - current distance: %.1f, target distance: %.1f, speed: %.1f, current pose: %s",
-						distance, m_controller.getGoal().position,
-						speed, "" + m_driveSubsystem.getPose()));
+		// SmartDashboard.putNumber("err", m_controller.getPositionError());
+		var out = m_controller.calculate(m_driveSubsystem.getPose().getX());
+		// SmartDashboard.putNumber("out", out);
+		// SmartDashboard.putNumber("Setpoint Position",
+		// m_controller.getSetpoint().position);
+		// SmartDashboard.putNumber("Setpoint Velocity",
+		// m_controller.getSetpoint().velocity);
+		// m_driveSubsystem.setModuleStates(m_targetDirection * out, 0, 0, false);
+		m_driveSubsystem.setModuleStates(out, 0, 0, true);
 	}
 
-	/**
-	 * Calculates the travel distance of the robot.
-	 * 
-	 * @return the travel distance of the robot
-	 */
-	private double travelDistance() {
-		double d = m_driveSubsystem.getPose().getTranslation().minus(m_startPosition).getNorm();
-		return m_controller.getGoal().position < 0 ? -d : d;
-	}
-
-	/**
-	 * Is invoked once this {@code DriveDistanceCommand} is either ended or
-	 * interrupted.
-	 * 
-	 * @param interrupted
-	 *                    indicates if this {@code DriveDistanceCommand} was
-	 *                    interrupted
-	 */
-	@Override
-	public void end(boolean interrupted) {
-		m_driveSubsystem.setModuleStates(0, 0, 0, true);
-		SmartDashboard.putString("drive",
-				String.format(
-						"distance: end - %s, current distance: %.1f, target distance: %.1f, current pose: %s",
-						(interrupted ? "interrupted" : "completed"), travelDistance(),
-						m_controller.getGoal().position, "" + m_driveSubsystem.getPose()));
-	}
-
-	/**
-	 * Determines whether or not this {@code DriveDistanceCommand} needs to end.
-	 * 
-	 * @return {@code true} if this {@code DriveDistanceCommand} needs to end;
-	 *         {@code false} otherwise
-	 */
 	@Override
 	public boolean isFinished() {
 		return m_controller.atGoal();
 	}
 
+	@Override
+	public void end(boolean interrupted) {
+		m_driveSubsystem.stopDriving();
+	}
 }

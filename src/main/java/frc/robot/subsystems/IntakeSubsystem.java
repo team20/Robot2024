@@ -24,7 +24,7 @@ public class IntakeSubsystem extends SubsystemBase {
 		m_motor.setInverted(kInvert);
 		m_motor.enableVoltageCompensation(12);
 		m_motor.setSmartCurrentLimit(kSmartCurrentLimit);
-		m_motor.setSecondaryCurrentLimit(kPeakCurrentLimit);
+		m_motor.setSecondaryCurrentLimit(kPeakCurrentLimit, kPeakCurrentRotations);
 		m_encoder.setVelocityConversionFactor(kIntakeGearRatio);
 	}
 

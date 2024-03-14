@@ -2,45 +2,43 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.commands;
+package frc.robot.commands.drive;
 
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.DriveSubsystem;
 
-public class TurnRelativeCommand extends Command {
+public class DriveTimeCommand extends Command {
 	private DriveSubsystem m_driveSubsystem;
-	private double m_angle;
-	private PIDController m_controller;
+	private double m_seconds;
+	private final Timer m_timer = new Timer();
+	private final double m_speed;
 
 	/**
-	 * Creates a new TurnRelativeCommand.
+	 * Creates a new DriveTimeCommand.
 	 * 
-	 * @param subsystem The drive subsystem.
-	 * @param angle     The angle in degrees.
+	 * @param subsystem The subsystem
+	 * @param seconds   Time to drive in seconds
+	 * @param speed     The speed in percent output
 	 */
-	public TurnRelativeCommand(DriveSubsystem subsystem, double angle) {
+	public DriveTimeCommand(DriveSubsystem subsystem, double seconds, double speed) {
 		m_driveSubsystem = subsystem;
-		m_angle = angle;
-		m_controller = new PIDController(0.0075, 0, 0);
-		m_controller.enableContinuousInput(0, 360);
-		m_controller.setTolerance(5);
+		m_seconds = seconds;
+		m_speed = speed;
 		addRequirements(subsystem);
 	}
 
 	// Called when the command is initially scheduled.
 	@Override
 	public void initialize() {
-		m_controller.setSetpoint(m_driveSubsystem.getHeading().getDegrees() + m_angle);
+		m_timer.restart();
 	}
 
 	// Called every time the scheduler runs while the command is scheduled.
 	@Override
 	public void execute() {
-		var moduleStates = m_driveSubsystem.calculateModuleStates(
-				new ChassisSpeeds(0, 0, m_controller.calculate(m_driveSubsystem.getHeading().getDegrees())), false);
-		m_driveSubsystem.setModuleStates(moduleStates);
+		m_driveSubsystem.calculateModuleStates(new ChassisSpeeds(m_speed, 0, 0), true);
 	}
 
 	// Called once the command ends or is interrupted.
@@ -52,6 +50,6 @@ public class TurnRelativeCommand extends Command {
 	// Returns true when the command should end.
 	@Override
 	public boolean isFinished() {
-		return m_controller.atSetpoint();
+		return m_timer.get() >= m_seconds;
 	}
 }
