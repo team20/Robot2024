@@ -72,7 +72,7 @@ public class LimeLightEmulationSubsystem extends SubsystemBase {
 		}
 		m_limelightEmulator = new LimeLightEmulator(() -> {
 			return m_pose;
-		}, 0.165, 54.0, 3, 0.2, 10.0, 0.1, aprilTagPoses);
+		}, 0.165, 54.0, 4, 0.2, 10.0, 0.1, aprilTagPoses);
 		m_poseCalculator = new PoseCalculator() {
 
 			Pose2d previous = null;

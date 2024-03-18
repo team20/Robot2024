@@ -48,6 +48,7 @@ public class AimerSubsystem extends SubsystemBase {
 		SmartDashboard.putNumber("Aimer Height", getAimerHeight());
 		SmartDashboard.putNumber("Aimer 550 Amp Draw", m_neoAimer.getOutputCurrent());
 		SmartDashboard.putNumber("Aimer Neo Speed", m_neoAimer.get());
+		SmartDashboard.putNumber("Aimer 550 Temperature", m_neoAimer.getMotorTemperature());
 		if (!m_isManual) {
 			if (m_controller.atSetpoint()) {
 				m_neoAimer.set(0);

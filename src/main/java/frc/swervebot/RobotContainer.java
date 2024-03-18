@@ -16,9 +16,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import frc.robot.CommandComposer;
 import frc.robot.Robot;
+import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.drive.DriveCommand;
 import frc.robot.commands.drive.DriveDistanceCommand;
 import frc.robot.subsystems.AdvantageScopeUtil;
+import frc.robot.subsystems.AimerSubsystem;
 import frc.robot.subsystems.ArduinoSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.LimeLightEmulationSubsystem;
@@ -43,6 +45,8 @@ public class RobotContainer implements frc.common.RobotContainer {
 	private final DriveSubsystem m_driveSubsystem = new DriveSubsystem();
 	protected final ArduinoSubsystem m_ArduinoSubsystem = new ArduinoSubsystem();
 	private final PneumaticsSubsystem m_pneumaticsSubsystem = new PneumaticsSubsystem();
+	private final AimerSubsystem m_aimerSubsystem = new AimerSubsystem();
+	private final RegressionTargeter m_targeter = new RegressionTargeter();
 	private final SendableChooser<Command> m_autoSelector = new SendableChooser<Command>();
 	// private final LimeLightSubsystem m_limeLightSubsystem = new
 	// LimeLightSubsystem() {
@@ -96,8 +100,8 @@ public class RobotContainer implements frc.common.RobotContainer {
 		if (RobotBase.isSimulation())
 			new LimeLightEmulationSubsystem(new Pose(-2, 0, 180), 0.01, m_driveSubsystem);
 
-		CommandComposer.setSubsystems(m_driveSubsystem, null, m_pneumaticsSubsystem, null,
-				null, null, null, null, null,
+		CommandComposer.setSubsystems(m_driveSubsystem, null, m_pneumaticsSubsystem, m_aimerSubsystem,
+				m_targeter, null, null, null, null,
 				m_limeLightSubsystem);
 
 		// Configure the button bindings
@@ -141,17 +145,23 @@ public class RobotContainer implements frc.common.RobotContainer {
 				new DriveDistanceCommand(m_driveSubsystem, 1, 0.1)
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1)),
 		};
-		// m_controller.button(Button.kSquare)
-		// .whileTrue(samples[0]);
 		m_controller.button(Button.kSquare)
-				.whileTrue(CommandComposer.getFiveScoreBlueAuto());
+				.whileTrue(CommandComposer.getDriveWhileAimingCommand(() -> m_controller.getRawAxis(Axis.kLeftY),
+						() -> m_controller.getRawAxis(Axis.kLeftX), 5));
+		// m_controller.button(Button.kSquare)
+		// .whileTrue(CommandComposer.getFiveScoreBlue321C1());
 		m_controller.button(Button.kX)
-				.whileTrue(CommandComposer.getFiveScoreRedAuto());
+				.whileTrue(CommandComposer.getFiveScoreRed321C1());
 		m_controller.button(Button.kCircle)
-				.whileTrue(CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
+				.whileTrue(CommandComposer.getThreeScoreBlueC4C5());
 		m_controller.button(Button.kTriangle)
 				.whileTrue(
-						CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
+						CommandComposer.getThreeScoreRedC4C5());
+		// m_controller.button(Button.kCircle)
+		// .whileTrue(CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
+		// m_controller.button(Button.kTriangle)
+		// .whileTrue(
+		// CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
 	}
 
 	public Command getAutonomousCommand() {

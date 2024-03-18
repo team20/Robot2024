@@ -58,6 +58,24 @@ public class DriveCommand extends Command {
 	private ProfiledPIDController m_controllerYaw;
 
 	/**
+	 * A {@code boolean} variable indicating whether or not the
+	 * {@code ProfiledPIDController}s need to be reset at the commencement of this
+	 * {@code DriveCommand} (i.e,
+	 * when the scheduler begins to periodically execute this {@code DriveCommand}).
+	 */
+	private boolean m_resetControllers;
+
+	/**
+	 * The distance error in meters which is tolerable.
+	 */
+	private double m_distanceTolerance;
+
+	/**
+	 * The angle error in degrees which is tolerable.
+	 */
+	private double m_angleTolerance;
+
+	/**
 	 * Constructs a new {@code DriveCommand} whose purpose is to move the
 	 * robot by the specified x and y-coordinate and yaw values in the
 	 * robot-oriented fashion.
@@ -94,17 +112,47 @@ public class DriveCommand extends Command {
 	 */
 	public DriveCommand(DriveSubsystem driveSubsystem, Supplier<Pose2d> targetPoseSupplier, double distanceTolerance,
 			double angleTolerance) {
+		this(null, driveSubsystem, targetPoseSupplier, distanceTolerance, angleTolerance);
+	}
+
+	/**
+	 * Constructs a new {@code DriveCommand} whose purpose is to move the
+	 * robot to a certain target pose while benefitting from another
+	 * {@code DriveCommand} executed right before the new {@code DriveCommand}.
+	 * 
+	 * @param previous           the {@code DriveCommand} (to be) executed right
+	 *                           before the new {@code DriveCommand}.
+	 * @param driveSubsystem     the {@code DriveSubsystem} to use
+	 * @param targetPoseSupplier a {@code Supplier<Pose2d>} that provides the
+	 *                           target pose to which the robot should move.
+	 *                           This is used at the commencement of this
+	 *                           {@code DriveCommand} (i.e., when the scheduler
+	 *                           begins to periodically execute this
+	 *                           {@code DriveCommand})
+	 * @param distanceTolerance  the distance error in meters which is tolerable
+	 * @param angleTolerance     the angle error in degrees which is tolerable
+	 */
+	public DriveCommand(DriveCommand previous, DriveSubsystem driveSubsystem, Supplier<Pose2d> targetPoseSupplier,
+			double distanceTolerance,
+			double angleTolerance) {
 		m_driveSubsystem = driveSubsystem;
 		m_targetPoseSupplier = targetPoseSupplier;
-		var constraints = new TrapezoidProfile.Constraints(kDriveMaxVelocity, kDriveMaxAcceleration);
-		m_controllerX = new ProfiledPIDController(kDriveP, kDriveI, kDriveD, constraints);
-		m_controllerY = new ProfiledPIDController(kDriveP, kDriveI, kDriveD, constraints);
-		m_controllerYaw = new ProfiledPIDController(kTurnP, kTurnI, kTurnD,
-				new TrapezoidProfile.Constraints(kTurnMaxVelocity, kTurnMaxAcceleration));
-		m_controllerX.setTolerance(distanceTolerance);
-		m_controllerY.setTolerance(distanceTolerance);
-		m_controllerYaw.setTolerance(angleTolerance);
-		m_controllerYaw.enableContinuousInput(-180, 180);
+		m_distanceTolerance = distanceTolerance;
+		m_angleTolerance = angleTolerance;
+		if (previous == null) {
+			var constraints = new TrapezoidProfile.Constraints(kDriveMaxVelocity, kDriveMaxAcceleration);
+			m_controllerX = new ProfiledPIDController(kDriveP, kDriveI, kDriveD, constraints);
+			m_controllerY = new ProfiledPIDController(kDriveP, kDriveI, kDriveD, constraints);
+			m_controllerYaw = new ProfiledPIDController(kTurnP, kTurnI, kTurnD,
+					new TrapezoidProfile.Constraints(kTurnMaxVelocity, kTurnMaxAcceleration));
+			m_controllerYaw.enableContinuousInput(-180, 180);
+			m_resetControllers = true;
+		} else {
+			m_controllerX = previous.m_controllerX;
+			m_controllerY = previous.m_controllerY;
+			m_controllerYaw = previous.m_controllerYaw;
+			m_resetControllers = false;
+		}
 		addRequirements(m_driveSubsystem);
 	}
 
@@ -120,9 +168,14 @@ public class DriveCommand extends Command {
 			targetPose = m_targetPoseSupplier.get();
 		} catch (Exception e) {
 		}
-		m_controllerX.reset(pose.getX());
-		m_controllerY.reset(pose.getY());
-		m_controllerYaw.reset(pose.getRotation().getDegrees());
+		if (m_resetControllers) {
+			m_controllerX.reset(pose.getX());
+			m_controllerY.reset(pose.getY());
+			m_controllerYaw.reset(pose.getRotation().getDegrees());
+		}
+		m_controllerX.setTolerance(m_distanceTolerance);
+		m_controllerY.setTolerance(m_distanceTolerance);
+		m_controllerYaw.setTolerance(m_angleTolerance);
 		m_controllerX.setGoal(targetPose.getX());
 		m_controllerY.setGoal(targetPose.getY());
 		m_controllerYaw.setGoal(targetPose.getRotation().getDegrees());
@@ -139,9 +192,14 @@ public class DriveCommand extends Command {
 		double speedY = m_controllerY.calculate(pose.getY());
 		// NEGATION if positive turnSpeed: clockwise rotation
 		double speedYaw = -m_controllerYaw.calculate(pose.getRotation().getDegrees());
+		// m_driveSubsystem.setModuleStates(m_controllerX.atGoal() ? 0 : speedX,
+		// m_controllerY.atGoal() ? 0 : speedY,
+		// m_controllerYaw.atGoal() ? 0 : speedYaw, true);
+		m_driveSubsystem.setModuleStates(speedX, speedY, speedYaw, true);
+
+		// TODO: Hwang check if it is better to apply threshold.
 		// speedX = applyThreshold(speedX, DriveConstants.kMinSpeed);
 		// speedY = applyThreshold(speedY, DriveConstants.kMinSpeed);
-		m_driveSubsystem.setModuleStates(speedX, speedY, speedYaw, true);
 	}
 
 	/**
@@ -190,10 +248,30 @@ public class DriveCommand extends Command {
 	 * @return a {@code Commmand} for algining the robot to the specified
 	 *         {@code Pose}
 	 */
-	public static Command alignTo(Pose2d targetPose, double distanceTolerance, double angleTolerance,
+	public static DriveCommand alignTo(Pose2d targetPose, double distanceTolerance, double angleTolerance,
 			DriveSubsystem driveSubsystem,
 			LimeLightSubsystem limeLightSubsystem) {
-		return new DriveCommand(driveSubsystem,
+		return alignTo(targetPose, distanceTolerance, angleTolerance, null, driveSubsystem, limeLightSubsystem);
+	}
+
+	/**
+	 * Constructs a {@code Commmand} for algining the robot to the specified
+	 * {@code Pose}.
+	 * 
+	 * @param targetPose         the target pose
+	 * @param distanceTolerance  the distance error in meters which is tolerable
+	 * @param angleTolerance     the angle error in degrees which is tolerable
+	 * @param previous           the {@code DriveCommand} (to be) executed right
+	 *                           before the new {@code DriveCommand}.
+	 * @param driveSubsystem     the {@code DriveSubsystem} to use
+	 * @param limeLightSubsystem the {@code LimeLightSubsystem} to use
+	 * @return a {@code Commmand} for algining the robot to the specified
+	 *         {@code Pose}
+	 */
+	public static DriveCommand alignTo(Pose2d targetPose, double distanceTolerance, double angleTolerance,
+			DriveCommand previous, DriveSubsystem driveSubsystem,
+			LimeLightSubsystem limeLightSubsystem) {
+		return new DriveCommand(previous, driveSubsystem,
 				() -> driveSubsystem.getPose().plus(limeLightSubsystem.transformationTo(targetPose)),
 				distanceTolerance, angleTolerance);
 	}

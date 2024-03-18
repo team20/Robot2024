@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  */
 public class Robot extends TimedRobot {
 	private Command m_autonomousCommand;
-	private RobotContainer m_robotContainer;
+	private frc.common.RobotContainer m_robotContainer;
 
 	/**
 	 * This function is run when the robot is first started up and should be used
@@ -34,7 +34,7 @@ public class Robot extends TimedRobot {
 		DataLogManager.start();
 		DataLogManager.logNetworkTables(true);
 		DriverStation.startDataLog(DataLogManager.getLog());
-		m_robotContainer = new RobotContainer();
+		m_robotContainer = new frc.swervebot.RobotContainer();
 		if (RobotBase.isReal()) {
 			UsbCamera camera = CameraServer.startAutomaticCapture();
 			camera.setVideoMode(PixelFormat.kMJPEG, 160, 120, 30);
