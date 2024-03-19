@@ -17,7 +17,8 @@ public class IndexerShootCommand extends Command {
 	public IndexerShootCommand(IndexerSubsystem indexerSubsystem) {
 		m_timer = new Timer();
 		m_indexerSubsystem = indexerSubsystem;
-		addRequirements(indexerSubsystem);
+		if (indexerSubsystem != null)
+			addRequirements(indexerSubsystem);
 	}
 
 	// Called when the command is initially scheduled.
@@ -25,13 +26,15 @@ public class IndexerShootCommand extends Command {
 	public void initialize() {
 		m_timer.reset();
 		m_timer.start();
-		m_indexerSubsystem.setSpeed(Constants.IndexerConstants.kKickSpeed);
+		if (m_indexerSubsystem != null)
+			m_indexerSubsystem.setSpeed(Constants.IndexerConstants.kKickSpeed);
 	}
 
 	// Called once the command ends or is interrupted.
 	@Override
 	public void end(boolean interrupted) {
-		m_indexerSubsystem.stop();
+		if (m_indexerSubsystem != null)
+			m_indexerSubsystem.stop();
 	}
 
 	// Returns true when the command should end.

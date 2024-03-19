@@ -146,8 +146,11 @@ public class RobotContainer implements frc.common.RobotContainer {
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1)),
 		};
 		m_controller.button(Button.kSquare)
-				.whileTrue(CommandComposer.getDriveWhileAimingCommand(() -> m_controller.getRawAxis(Axis.kLeftY),
-						() -> m_controller.getRawAxis(Axis.kLeftX), 5));
+				.whileTrue(
+						new frc.robot.commands.drive.DriveWhileAimingCommand(() -> m_controller.getRawAxis(Axis.kLeftY),
+								() -> m_controller.getRawAxis(Axis.kLeftX), 5, 0.2, 0.1, m_driveSubsystem,
+								m_aimerSubsystem,
+								m_targeter, null, m_ArduinoSubsystem, m_limeLightSubsystem));
 		// m_controller.button(Button.kSquare)
 		// .whileTrue(CommandComposer.getFiveScoreBlue321C1());
 		m_controller.button(Button.kX)

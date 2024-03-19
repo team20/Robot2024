@@ -62,10 +62,10 @@ public class LimeLightSubsystem extends SubsystemBase {
 		/**
 		 * Returns the sum of this {@code Pose} and the specified {@code Pose}.
 		 * 
-		 * @param other a {@code Pose}
+		 * @param other a {@code Pose2d}
 		 * @return the sum of this {@code Pose} and the specified {@code Pose}
 		 */
-		public Pose2d add(Pose other) {
+		public Pose2d add(Pose2d other) {
 			return new Pose2d(getTranslation().plus(other.getTranslation()), getRotation().plus(other.getRotation()));
 		}
 
@@ -225,28 +225,45 @@ public class LimeLightSubsystem extends SubsystemBase {
 	}
 
 	/**
+	 * Returns the transformation needed to face toward the specified
+	 * target position and remain the specified distance away from the target
+	 * position.
+	 * 
+	 * @param targetPosition   the target position whose x and y-coordinate values
+	 *                         are in meters
+	 * @param distanceToTarget the desired distance in meters to the target
+	 * @return the transformation needed to face toward the specified
+	 *         target position and remain the specified distance away from the
+	 *         target position
+	 */
+	public static Transform2d transformationToward(Translation2d targetPosition, double distanceToTarget,
+			Pose2d currentPose) {
+		if (currentPose == null)
+			return null;
+		Translation2d diff = targetPosition.minus(currentPose.getTranslation());
+		if (diff.getNorm() == 0)
+			return null;
+		var targetPose = new Pose2d(
+				currentPose.getTranslation().plus(diff.times(1 - distanceToTarget / diff.getNorm())),
+				diff.getAngle());
+		return targetPose.minus(currentPose);
+	}
+
+	/**
 	 * Returns the transformation needed for the robot to face toward the specified
-	 * target position and remain the specified distance away fron the target
+	 * target position and remain the specified distance away from the target
 	 * position.
 	 * 
 	 * @param targetPosition   the target position whose x and y-coordinate values
 	 *                         are in meters
 	 * @param distanceToTarget the desired distance in meters to the target
 	 * @return the transformation needed for the robot to face toward the specified
-	 *         target position and remain the specified distance away fron the
+	 *         target position and remain the specified distance away from the
 	 *         target position; {@code null} if it has not been
 	 *         possible to reliably estimate the pose of the robot
 	 */
 	public Transform2d transformationToward(Translation2d targetPosition, double distanceToTarget) {
-		var pose = estimatedPose();
-		if (pose == null)
-			return null;
-		Translation2d diff = targetPosition.minus(pose.getTranslation());
-		if (diff.getNorm() == 0)
-			return null;
-		var targetPose = new Pose2d(pose.getTranslation().plus(diff.times(1 - distanceToTarget / diff.getNorm())),
-				diff.getAngle());
-		return targetPose.minus(pose);
+		return transformationToward(targetPosition, distanceToTarget, estimatedPose());
 	}
 
 	/**

@@ -1,23 +1,17 @@
 package frc.robot;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
-import static frc.robot.Constants.DriveConstants.*;
 import static frc.robot.Constants.PoseConstants.*;
 
 import java.util.function.Supplier;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import frc.robot.Constants.ControllerConstants;
 import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.TimedLEDCommand;
 import frc.robot.commands.aimshooter.AimHeightCommand;
@@ -625,7 +619,7 @@ public class CommandComposer {
 				IndexerCommand.getFowardCommand(m_indexerSubsystem));
 	}
 
-	public static Command getAimAndShootCommand() {
+	public static Command getAimCommand() {
 		// TODO: remove the code involving Robot.IsSimulation() in the competition code
 		if (frc.robot.Robot.isSimulation())
 			return getTurnToClosestSpeakerCommand();
@@ -645,15 +639,20 @@ public class CommandComposer {
 	}
 
 	public static Command getAimAndShootAuto() {
+		return getAimAndShootAuto(1, Constants.IndexerConstants.kKickTime);
+	}
+
+	public static Command getAimAndShootAuto(double timeout, double duration) {
 		// TODO: remove the code involving Robot.IsSimulation() in the competition code
 		if (frc.robot.Robot.isSimulation())
-			return getAimAndShootCommand()
-					.withTimeout(2);
+			getAimCommand()
+					.withTimeout(timeout);
 		return sequence(
-				getAimAndShootCommand()
-						.withTimeout(2),
+				getAimCommand()
+						.withTimeout(timeout),
 				new IndexerShootCommand(m_indexerSubsystem),
-				m_flywheelSubsystem.stopFlywheel());
+				m_arduinoSubsystem == null ? new WaitCommand(0) : m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT),
+				m_flywheelSubsystem == null ? new WaitCommand(0) : m_flywheelSubsystem.stopFlywheel());
 	}
 
 	public static Command getSourcePickUpCommand() {
@@ -841,7 +840,6 @@ public class CommandComposer {
 		);
 	}
 
-	// TODO: things may go very very wrong...
 	public static Command getThreeScoreTwoMiddleBottomBlueAuto() {
 		return sequence(
 				getAimAndShootAuto(),
@@ -858,7 +856,6 @@ public class CommandComposer {
 				getAimAndShootAuto());
 	}
 
-	// TODO: things may go very very wrong...
 	public static Command getThreeScoreTwoMiddleBottomRedAuto() {
 		return sequence(
 				m_pneumaticsSubsystem.downIntakeCommand(),
@@ -910,125 +907,72 @@ public class CommandComposer {
 				getShootToClosestSpeakerAtCommand(kRedNoteOnePose, 4));
 	}
 
-	public static Command getDriveWhileAimingCommand(Supplier<Double> forwardSpeed, Supplier<Double> strafeSpeed,
-			double angleThreshold) {
-		return new Command() {
-
-			Long timestamp = null;
-
-			private ProfiledPIDController m_controllerYaw;
-
-			{
-				m_controllerYaw = new ProfiledPIDController(kTurnP * 1.5, kTurnI, kTurnD,
-						new TrapezoidProfile.Constraints(kTurnMaxVelocity, kTurnMaxAcceleration * 1.5));
-				m_controllerYaw.enableContinuousInput(-180, 180);
-				addRequirements(m_driveSubsystem, m_aimerSubsystem);
-			}
-
-			@Override
-			public void initialize() {
-				m_controllerYaw.reset(0);
-			}
-
-			@Override
-			public void execute() {
-				double fwdSpeed = kTeleopMaxSpeed
-						* MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
-				fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
-				double strSpeed = kTeleopMaxSpeed
-						* MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
-				strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
-				double rotSpeed = 0;
-				try {
-					var closest = m_limeLightSubsystem.closest(kBlueSpeakerPosition, kRedSpeakerPosition);
-					double angle = m_limeLightSubsystem.angleTo(closest);
-					rotSpeed = m_controllerYaw.calculate(-angle); // to achieve angle error 0
-					double distance = m_limeLightSubsystem.distanceTo(closest);
-					double actuatorHeightSetpoint = m_targeter.getAngle(distance);
-					m_aimerSubsystem.setAimerHeight(actuatorHeightSetpoint);
-					if (timestamp == null || timestamp < System.currentTimeMillis()) {
-						double readiness = m_limeLightSubsystem.confidence()
-								+ (m_aimerSubsystem.atAimerSetpoint() ? 0 : -1);
-						SmartDashboard.putNumber(
-								"pose estimation: drive while aiming ", readiness);
-						if (readiness > 0.5) {
-							timestamp = System.currentTimeMillis() + 500;
-							m_arduinoSubsystem.setCode(StatusCode.SOLID_BLUE);
-						}
-					}
-				} catch (Exception e) {
-				}
-				// NEGATION if positive turnSpeed: clockwise rotation
-				rotSpeed = -rotSpeed;
-				m_driveSubsystem.setModuleStates(fwdSpeed, strSpeed, rotSpeed, true);
-			}
-
-		};
-
-	}
-
 	public static Command getMoveWhileAimingAndShootCommand(double maxDistanceToTarget, double timeout) {
 		return getAimWhileMovingAndShootCommand(maxDistanceToTarget, timeout, 0);
 	}
 
 	public static Command getThreeScoreBlueC4C5() {
 		return sequence(
-				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto()),
-				getPickUpNoteAtCommand(kBlueCenterNoteFourPose, 1.3, 6, 10, new Pose(-4.3,
+				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
+				getPickUpNoteAtCommand(kBlueCenterNoteFourPose, 1.3, 6, 10, new Pose(-3,
 						-3.2, 180)),
-				getAimWhileMovingAndShootCommand(3.5, 4, 10,
-						new Pose(-4, -2.2, 180)),
-				getPickUpNoteAtCommand(kBlueCenterNoteFivePose, 1.2, 6, 10),
-				getAimWhileMovingAndShootCommand(3.5, 4, 10,
+				getAimWhileMovingAndShootCommand(3.5, 4, 5,
+						new Pose(-2.5, -3, 180)),
+				getPickUpNoteAtCommand(kBlueCenterNoteFivePose, 0.5, 6, 10, new Pose(-3,
+						-3.2, 180)),
+				getAimWhileMovingAndShootCommand(3.5, 3.7, 5,
 						kBlueCenterNoteFivePose.add(new Pose(-2.5, 0, -20))));
 	}
 
 	public static Command getThreeScoreRedC4C5() {
 		return sequence(
-				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto()),
+				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
 				getPickUpNoteAtCommand(kRedCenterNoteFourPose, 1.3, 6, 10, new Pose(3, -3.2,
 						0)),
-				getAimWhileMovingAndShootCommand(3.5, 4, 10,
-						new Pose(4, -2.2, 0)),
-				getPickUpNoteAtCommand(kRedCenterNoteFivePose, 1.2, 6, 10),
-				getAimWhileMovingAndShootCommand(3.5, 4, 10,
+				getAimWhileMovingAndShootCommand(3.5, 4, 5,
+						new Pose(2.5, -3, 0)),
+				getPickUpNoteAtCommand(kRedCenterNoteFivePose, 0.5, 6, 10, new Pose(3, -3.2,
+						0)),
+				getAimWhileMovingAndShootCommand(3.5, 3.7, 5,
 						kRedCenterNoteFivePose.add(new Pose(2.5, 0, 20))));
 	}
 
 	public static Command getFourScoreBlue321() {
 		return sequence(
-				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto()),
+				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
 				// 2nd note
-				getPickUpNoteAndShootAtCommand(kBlueNoteThreePose, 0.6, kBlueSpeakerPosition, 3, 3),
+				getPickUpNoteAndShootAtCommand(kBlueNoteThreePose, 0.6, kBlueSpeakerPosition, 5, 3),
 				// 3rd note
-				getPickUpNoteAndShootAtCommand(kBlueNoteTwoPose, 0.9, kBlueSpeakerPosition, 3, 3),
+				getPickUpNoteAndShootAtCommand(kBlueNoteTwoPose, 0.9, kBlueSpeakerPosition, 5, 3),
 				// 4th note
-				getPickUpNoteAndShootAtCommand(kBlueNoteOnePose, 0.6, kBlueSpeakerPosition, 3, 3));
+				getPickUpNoteAndShootAtCommand(kBlueNoteOnePose, 0.6, kBlueSpeakerPosition, 5, 3));
 	}
 
 	public static Command getFourScoreRed321() {
 		return sequence(
-				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto()),
+				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
 				// 2nd note
-				getPickUpNoteAndShootAtCommand(kRedNoteThreePose, 0.6, kRedSpeakerPosition, 3, 3),
+				getPickUpNoteAndShootAtCommand(kRedNoteThreePose, 0.6, kRedSpeakerPosition, 5, 3),
 				// 3rd note
-				getPickUpNoteAndShootAtCommand(kRedNoteTwoPose, 0.9, kRedSpeakerPosition, 3, 3),
+				getPickUpNoteAndShootAtCommand(kRedNoteTwoPose, 0.9, kRedSpeakerPosition, 5, 3),
 				// 4th note
-				getPickUpNoteAndShootAtCommand(kRedNoteOnePose, 0.6, kRedSpeakerPosition, 3, 3));
+				getPickUpNoteAndShootAtCommand(kRedNoteOnePose, 0.6, kRedSpeakerPosition, 5, 3));
 	}
 
 	public static Command getFiveScoreBlue321C1() {
 		return sequence(
 				getFourScoreBlue321(),
-				getPickUpNoteAtCommand(kBlueCenterNoteOnePose, 0.6, 4, 5),
-				getAimWhileMovingAndShootCommand(3, 4, 30, kBlueNoteOnePose));
+				getPickUpNoteAtCommand(kBlueCenterNoteOnePose, 0.2, 4, 2),
+				getAimWhileMovingAndShootCommand(3.5, 2.5, 25,
+						kBlueCenterNoteOnePose.add(new Pose(-3, 0, 0))));
 	}
 
 	public static Command getFiveScoreRed321C1() {
 		return sequence(
 				getFourScoreRed321(),
-				getPickUpNoteAtCommand(kRedCenterNoteOnePose, 0.6, 4, 5),
-				getAimWhileMovingAndShootCommand(3, 4, 30, kRedNoteOnePose));
+				getPickUpNoteAtCommand(kRedCenterNoteOnePose, 0.2, 4, 2),
+				getAimWhileMovingAndShootCommand(3.5, 2.5, 25,
+						kRedCenterNoteOnePose.add(new Pose(3, 0, 0))));
 	}
 
 	public static Command getPickUpNoteAtCommand(Pose2d pickUpPose, double pickUpDistance, double timeout,

@@ -186,7 +186,7 @@ public class RobotContainer {
 				() -> m_driverController.getRawAxis(Axis.kLeftTrigger)));
 		m_driverController.button(Button.kOptions).onTrue(m_driveSubsystem.resetHeadingCommand());
 		// D RIGHT BUMPER - Aim and Shoot
-		m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getAimAndShootCommand())
+		m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getAimCommand())
 				.onFalse(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_LOW)
 						.andThen(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SETTLE))
 						.alongWith(m_flywheelSubsystem.stopFlywheel())
