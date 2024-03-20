@@ -43,7 +43,7 @@ public class RobotContainer implements frc.common.RobotContainer {
 
 	private final CommandGenericHID m_controller = new CommandGenericHID(ControllerConstants.kDriverControllerPort);
 	private final DriveSubsystem m_driveSubsystem = new DriveSubsystem();
-	protected final ArduinoSubsystem m_ArduinoSubsystem = new ArduinoSubsystem();
+	protected final ArduinoSubsystem m_arduinoSubsystem = new ArduinoSubsystem();
 	private final PneumaticsSubsystem m_pneumaticsSubsystem = new PneumaticsSubsystem();
 	private final AimerSubsystem m_aimerSubsystem = new AimerSubsystem();
 	private final RegressionTargeter m_targeter = new RegressionTargeter();
@@ -100,7 +100,7 @@ public class RobotContainer implements frc.common.RobotContainer {
 		if (RobotBase.isSimulation())
 			new LimeLightEmulationSubsystem(new Pose(-2, 0, 180), 0.01, m_driveSubsystem);
 
-		CommandComposer.setSubsystems(m_driveSubsystem, null, m_pneumaticsSubsystem, m_aimerSubsystem,
+		CommandComposer.setSubsystems(m_driveSubsystem, m_arduinoSubsystem, m_pneumaticsSubsystem, m_aimerSubsystem,
 				m_targeter, null, null, null, null,
 				m_limeLightSubsystem);
 
@@ -150,7 +150,7 @@ public class RobotContainer implements frc.common.RobotContainer {
 						new frc.robot.commands.drive.DriveWhileAimingCommand(() -> m_controller.getRawAxis(Axis.kLeftY),
 								() -> m_controller.getRawAxis(Axis.kLeftX), 5, 0.2, 0.1, m_driveSubsystem,
 								m_aimerSubsystem,
-								m_targeter, null, m_ArduinoSubsystem, m_limeLightSubsystem));
+								m_targeter, null, m_arduinoSubsystem, m_limeLightSubsystem));
 		// m_controller.button(Button.kSquare)
 		// .whileTrue(CommandComposer.getFiveScoreBlue321C1());
 		m_controller.button(Button.kX)

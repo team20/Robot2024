@@ -527,7 +527,7 @@ public class CommandComposer {
 	 */
 	public static Command getAmpTwoAutoRed() {
 		return sequence(
-				// strafe towards speaker, shoot
+				// strafe towards Amp, shoot
 				new PolarDriveCommand(m_driveSubsystem, 0.22, 90),
 				new PolarDriveCommand(m_driveSubsystem, 0.4, 0),
 				getAmpCommand(),
@@ -569,6 +569,24 @@ public class CommandComposer {
 				m_flywheelSubsystem.stopFlywheel());
 	}
 
+	public static Command getAmpAndLeave() {
+		return sequence(
+				getAmpCommand(),
+				new PolarDriveCommand(m_driveSubsystem, 0.55, 90 + 180),
+				new PolarDriveCommand(m_driveSubsystem, 0.7, 0).withTimeout(1),
+				new PolarDriveCommand(m_driveSubsystem, 0.01, 0).withTimeout(1),
+				new WaitCommand(1),
+				new IndexerShootCommand(m_indexerSubsystem),
+				waitSeconds(1.5),
+				m_flywheelSubsystem.stopFlywheel(),
+				// new TimedLEDCommand(m_arduinoSubsystem, 0.25,
+				// StatusCode.RAINBOW_PARTY_FUN_TIME),
+				new PolarDriveCommand(m_driveSubsystem, 1, 90 + 180),
+				new PolarDriveCommand(m_driveSubsystem, 0.4, 180));
+		// new TimedLEDCommand(m_arduinoSubsystem, 0.4,
+		// StatusCode.RAINBOW_PARTY_FUN_TIME));
+	}
+
 	/**
 	 * Returns a command to drive back and forth various amounts.
 	 * 
@@ -586,9 +604,6 @@ public class CommandComposer {
 	}
 
 	public static Command getIntakeWithSensorCommand() {
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (frc.robot.Robot.isSimulation())
-			return new WaitCommand(0);
 		return sequence(
 				parallel(
 						new IndexWithSensorCommand(m_indexerSubsystem, 0.5),
@@ -598,10 +613,18 @@ public class CommandComposer {
 				m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT));
 	}
 
+	public static Command getIntakeWithSensorNoLEDCommand() {
+		return sequence(
+				parallel(
+						new IndexWithSensorCommand(m_indexerSubsystem, 0.5),
+						m_intakeSubsystem == null ? new WaitCommand(0) : m_intakeSubsystem.forwardIntakeCommand()),
+				m_intakeSubsystem == null ? new WaitCommand(0) : m_intakeSubsystem.stopIntakeCommand());
+	}
+
 	public static Command getAmpCommand() {
 		return sequence(
-				new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_PRESET_DEFAULT),
-				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY, 1500, 1500)); // 1300 1650
+				new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.PRESET_AMP),
+				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY, 500, 2000)); // 1300 1650
 
 	}
 
@@ -620,9 +643,6 @@ public class CommandComposer {
 	}
 
 	public static Command getAimCommand() {
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (frc.robot.Robot.isSimulation())
-			return getTurnToClosestSpeakerCommand();
 		return sequence(
 				new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_PRESET_DEFAULT),
 				parallel(
@@ -634,8 +654,6 @@ public class CommandComposer {
 										.andThen(m_arduinoSubsystem.writeStatus(StatusCode.SOLID_BLUE)),
 						// new SimpleVisionAlignCommand(m_driveSubsystem, m_simpleVisionSubsystem)),
 						getTurnToClosestSpeakerCommand()));
-		// new IndexerShootCommand(m_indexerSubsystem),
-		// m_flywheelSubsystem.stopFlywheel());
 	}
 
 	public static Command getAimAndShootAuto() {
@@ -643,15 +661,11 @@ public class CommandComposer {
 	}
 
 	public static Command getAimAndShootAuto(double timeout, double duration) {
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (frc.robot.Robot.isSimulation())
-			getAimCommand()
-					.withTimeout(timeout);
 		return sequence(
 				getAimCommand()
 						.withTimeout(timeout),
 				new IndexerShootCommand(m_indexerSubsystem),
-				m_arduinoSubsystem == null ? new WaitCommand(0) : m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT),
+				m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT),
 				m_flywheelSubsystem == null ? new WaitCommand(0) : m_flywheelSubsystem.stopFlywheel());
 	}
 
@@ -677,7 +691,8 @@ public class CommandComposer {
 			var t = m_limeLightSubsystem.transformationToward(target);
 			return m_driveSubsystem.getPose().plus(t);
 		};
-		return new DriveCommand(m_driveSubsystem, s, 0.1, 5);
+		var driveCommand = new DriveCommand(m_driveSubsystem, s, 0.1, 5);
+		return driveCommand.andThen(new DriveCommand(driveCommand, m_driveSubsystem, s, 0.1, 5));
 	}
 
 	public static Command getMoveTowardClosestSpeakerCommand(double distanceToTarget) {
@@ -840,39 +855,6 @@ public class CommandComposer {
 		);
 	}
 
-	public static Command getThreeScoreTwoMiddleBottomBlueAuto() {
-		return sequence(
-				getAimAndShootAuto(),
-				DriveCommand.alignTo(new Pose(-5, -3, 180 + 25), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				m_pneumaticsSubsystem.downIntakeCommand(),
-				getPickUpNoteAtCommand(kBlueCenterNoteFourPose).withTimeout(4),
-				DriveCommand.alignTo(new Pose(-5.5, -2.3, 180 + 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				DriveCommand.alignTo(new Pose(-6.25, 0.4, 180 + 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getAimAndShootAuto(),
-				DriveCommand.alignTo(new Pose(-5.5, -3, 180 + 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getPickUpNoteAtCommand(kBlueCenterNoteFivePose).withTimeout(4),
-				DriveCommand.alignTo(new Pose(-5.5, -3, 180 + 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				DriveCommand.alignTo(new Pose(-6.25, 0.4, 180 + 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getAimAndShootAuto());
-	}
-
-	public static Command getThreeScoreTwoMiddleBottomRedAuto() {
-		return sequence(
-				m_pneumaticsSubsystem.downIntakeCommand(),
-				getAimAndShootAuto(),
-				DriveCommand.alignTo(new Pose(5, -3, -25), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				m_pneumaticsSubsystem.downIntakeCommand(),
-				getPickUpNoteAtCommand(kRedCenterNoteFourPose).withTimeout(4),
-				DriveCommand.alignTo(new Pose(5.5, -2.3, 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				DriveCommand.alignTo(new Pose(6.25, 0.4, 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getAimAndShootAuto(),
-				DriveCommand.alignTo(new Pose(5.5, -3, 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getPickUpNoteAtCommand(kRedCenterNoteFivePose).withTimeout(4),
-				DriveCommand.alignTo(new Pose(5.5, -3, 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				DriveCommand.alignTo(new Pose(6.25, 0.4, 0), 0.3, 10, m_driveSubsystem, m_limeLightSubsystem),
-				getAimAndShootAuto());
-	}
-
 	public static Command getThreeScoreOneMiddleTopBlueAuto() {
 		return sequence(m_pneumaticsSubsystem.downIntakeCommand(),
 				getShootToClosestSpeakerAtCommand(kBlueNoteOnePose.add(new Pose(-0.4, -0.4, 0)), 1.5),
@@ -907,7 +889,7 @@ public class CommandComposer {
 				getShootToClosestSpeakerAtCommand(kRedNoteOnePose, 4));
 	}
 
-	public static Command getMoveWhileAimingAndShootCommand(double maxDistanceToTarget, double timeout) {
+	public static Command getAimWileMovingAndShootCommand(double maxDistanceToTarget, double timeout) {
 		return getAimWhileMovingAndShootCommand(maxDistanceToTarget, timeout, 0);
 	}
 
@@ -983,64 +965,38 @@ public class CommandComposer {
 			driveCommand = addDriveCommand(command, intermediate, intermediateTolerance, driveCommand);
 		var readyPose = pickUpPose.plus(new Transform2d(pickUpDistance, 0, Rotation2d.fromDegrees(0)));
 		driveCommand = addDriveCommand(command, readyPose, intermediateTolerance, driveCommand);
-		command.addCommands(parallel(
-				DriveCommand.alignTo(pickUpPose, 0.1, 5, driveCommand, m_driveSubsystem, m_limeLightSubsystem),
-				getIntakeWithSensorCommand()));
+		command.addCommands(
+				// deadline(
+				// sequence(
+				// parallel(
+				race(
+						DriveCommand.alignTo(pickUpPose, 0.1, 5, driveCommand, m_driveSubsystem,
+								m_limeLightSubsystem),
+						getIntakeWithSensorNoLEDCommand()));
 		return command.withTimeout(timeout);
-	}
-
-	public static Command getAimWhileMovingAndShootCommand(Translation2d targetPosition, double maxDistanceToTarget,
-			double timeout,
-			double intermediateTolerance, Pose2d... intermediatePoses) {
-		Command command = getAimWhileMovingCommand(targetPosition, maxDistanceToTarget, intermediateTolerance,
-				intermediatePoses);
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (Robot.isSimulation())
-			return command.withTimeout(timeout);
-		return sequence(
-				command.withTimeout(timeout),
-				new IndexerShootCommand(m_indexerSubsystem),
-				m_flywheelSubsystem.stopFlywheel());
 	}
 
 	public static Command getAimWhileMovingAndShootCommand(double maxDistanceToTarget, double timeout,
 			double intermediateTolerance, Pose2d... intermediatePoses) {
 		Command command = getAimWhileMovingCommand(maxDistanceToTarget, intermediateTolerance, intermediatePoses);
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (Robot.isSimulation())
-			return command.withTimeout(timeout);
 		return sequence(
-				command.withTimeout(timeout),
-				new IndexerShootCommand(m_indexerSubsystem),
-				m_flywheelSubsystem.stopFlywheel());
+				parallel(
+						command,
+						CommandComposer.getIntakeWithSensorNoLEDCommand()).withTimeout(timeout),
+				getShootCommand(0.25));
 	}
 
 	public static Command getPickUpNoteAndShootAtCommand(Pose2d pickUpPose, double pickUpDistance,
 			Translation2d targetPosition, double timeout, double intermediateTolerance, Pose2d... intermediatePoses) {
 		Translation2d diff = targetPosition.minus(pickUpPose.getTranslation());
 		pickUpPose = new Pose2d(pickUpPose.getTranslation(), diff.getAngle());
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (Robot.isSimulation())
-			return getPickUpNoteAtCommand(pickUpPose, pickUpDistance, timeout, intermediateTolerance,
-					intermediatePoses);
 		return sequence(
 				parallel(
 						getPickUpNoteAtCommand(pickUpPose, pickUpDistance, timeout, intermediateTolerance,
 								intermediatePoses),
-						getAimCommand(() -> diff.getNorm())),
-				new IndexerShootCommand(m_indexerSubsystem),
-				m_flywheelSubsystem.stopFlywheel());
-	}
-
-	public static Command getAimWhileMovingCommand(Translation2d targetPosition, double maxDistanceToTarget,
-			double intermediateTolerance,
-			Pose2d... intermediatePoses) {
-		Supplier<Transform2d> transform = () -> {
-			var distance = m_limeLightSubsystem.distanceTo(targetPosition);
-			return distance < maxDistanceToTarget ? m_limeLightSubsystem.transformationToward(targetPosition)
-					: m_limeLightSubsystem.transformationToward(targetPosition, maxDistanceToTarget);
-		};
-		return getAimWhileMovingCommand(transform, intermediateTolerance, intermediatePoses);
+						getAimCommand(() -> diff.getNorm()).withTimeout(0.5)),
+				getIntakeWithSensorNoLEDCommand().withTimeout(0.725),
+				getShootCommand(0.25));
 	}
 
 	public static Command getAimWhileMovingCommand(double maxDistanceToTarget, double intermediateTolerance,
@@ -1061,33 +1017,29 @@ public class CommandComposer {
 		DriveCommand driveCommand = null;
 		for (Pose2d intermediate : intermediatePoses)
 			driveCommand = addDriveCommand(command, intermediate, intermediateTolerance, driveCommand);
-		// TODO: remove the code involving Robot.IsSimulation() in the competition code
-		if (Robot.isSimulation())
-			command.addCommands(new DriveCommand(driveCommand, m_driveSubsystem,
-					() -> m_driveSubsystem.getPose().plus(transformToTarget.get()), 0.1, 5));
-		else
-			command.addCommands(parallel(getAimCommand(() -> {
-				var distance = transformToTarget.get().getTranslation().getNorm();
-				distance = m_limeLightSubsystem.distanceToClosestSpeaker()
-						- transformToTarget.get().getTranslation().getNorm();
-				return distance;
-			}),
-					new DriveCommand(driveCommand, m_driveSubsystem,
-							() -> m_driveSubsystem.getPose().plus(transformToTarget.get()), 0.1, 5)));
+		command.addCommands(parallel(getAimCommand(() -> m_limeLightSubsystem.distanceToClosestSpeaker()
+				- transformToTarget.get().getTranslation().getNorm()),
+				new DriveCommand(driveCommand, m_driveSubsystem,
+						() -> m_driveSubsystem.getPose().plus(transformToTarget.get()), 0.1, 5)));
 		return command;
 	}
 
 	public static Command getAimCommand(Supplier<Double> distance) {
-		return new AimHeightCommand(m_aimerSubsystem, m_targeter,
-				AimHeightOperation.SET_PRESET_DEFAULT).andThen(
-						parallel(
-								sequence(
-										new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY,
-												8000, 8000),
-										new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SETTLE, 0, 0)),
-								sequence(new AimHeightCommand(m_aimerSubsystem, m_targeter,
-										AimHeightOperation.CALC_AND_SET,
-										distance), m_arduinoSubsystem.writeStatus(StatusCode.SOLID_BLUE))));
+		return parallel(
+				getAimWithoutStartingFlywheelCommand(distance),
+				sequence(
+						new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY,
+								8000, 8000),
+						new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SETTLE, 0, 0)));
+	}
+
+	public static Command getAimWithoutStartingFlywheelCommand(Supplier<Double> distance) {
+		return sequence(
+				new AimHeightCommand(m_aimerSubsystem, m_targeter,
+						AimHeightOperation.SET_PRESET_DEFAULT),
+				new AimHeightCommand(m_aimerSubsystem, m_targeter,
+						AimHeightOperation.CALC_AND_SET,
+						distance));
 	}
 
 	private static DriveCommand addDriveCommand(SequentialCommandGroup g, Pose2d targetPose,
@@ -1098,6 +1050,18 @@ public class CommandComposer {
 						m_limeLightSubsystem);
 		g.addCommands(driveCommand);
 		return driveCommand;
+	}
+
+	public static Command getShootCommand(double duration) {
+		return new IndexerShootCommand(duration, m_indexerSubsystem);// .andThen(m_flywheelSubsystem.stopFlywheel());
+	}
+
+	public static Command getShootAfterStartingFlywheelCommand(double duration) {
+		return sequence(
+				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY,
+						8000, 8000),
+				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SETTLE, 0, 0),
+				getShootCommand(duration));
 	}
 
 }

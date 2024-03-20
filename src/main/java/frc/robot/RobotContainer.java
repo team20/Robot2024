@@ -24,6 +24,7 @@ import frc.robot.commands.aimshooter.AimHeightCommand.AimHeightOperation;
 import frc.robot.commands.climber.ClimberDriveCommand;
 import frc.robot.commands.climber.ClimberPresetCommand;
 import frc.robot.commands.climber.ClimberPresetCommand.ClimberOperation;
+import frc.robot.commands.drive.DriveWhileAimingCommand;
 import frc.robot.commands.drive.PolarDriveCommand;
 import frc.robot.commands.flywheel.FlywheelCommand;
 import frc.robot.commands.flywheel.FlywheelCommand.FlywheelOperation;
@@ -85,10 +86,10 @@ public class RobotContainer {
 		// TurnToAngleCommand(m_driveSubsystem, 90.0, 0.5, true));
 		// m_autoSelector.addOption("Bang Bang Drive 2 Meters",
 		// new BangBangDriveDistanceCommand(m_driveSubsystem, 2, 0.01));
-		// m_autoSelector.addOption("Polar Drive Two Meters", new
-		// PolarDriveCommand(m_driveSubsystem, 2, 180));
+		m_autoSelector.addOption("Polar Drive Two Meters", new PolarDriveCommand(m_driveSubsystem, 2, 180));
 		m_autoSelector.addOption("Shoot and Leave Auto", CommandComposer.getShootAndLeaveAuto());
 		m_autoSelector.addOption("Middle Two Score", CommandComposer.getTwoScoreMiddleAuto());
+		m_autoSelector.addOption("Amp and Leave", CommandComposer.getAmpAndLeave());
 		// m_autoSelector.addOption("Right Two Score Blue",
 		// CommandComposer.getTwoScoreRightAutoBlue());
 		// m_autoSelector.addOption("Right Two Score Red",
@@ -115,8 +116,10 @@ public class RobotContainer {
 		// CommandComposer.getFourScoreLeftAutoRed());
 		// m_autoSelector.addOption("Five Score RED Auto (Start on Left)",
 		// CommandComposer.getFiveScoreRedAutoCommand());
-		// m_autoSelector.addOption("Five Score BLUE Auto (Start on Right)",
-		// CommandComposer.getFiveScoreBlueAutoCommand());
+		m_autoSelector.addOption("Five Score BLUE Auto (Start on Right)",
+				CommandComposer.getFiveScoreBlue321C1());
+		m_autoSelector.addOption("Five Score RED Auto (Start on Left)",
+				CommandComposer.getFiveScoreRed321C1());
 		m_autoSelector.addOption("Four Score @red 3, middle 5, and middle 4 RED Auto (Start on Left)",
 				CommandComposer.getTwoMiddleFourScoreRedCommand());
 		m_autoSelector.addOption("Four Score @blue 3, middle 5, and middle 4 BLUE Auto (Start on Right)",
@@ -125,10 +128,16 @@ public class RobotContainer {
 				CommandComposer.getThreeMiddleFourScoreRedCommand());
 		m_autoSelector.addOption("Four Score @middle 3, middle 4, and middle 5 BLUE Auto (Start on Right)",
 				CommandComposer.getThreeMiddleFourScoreBlueCommand());
-		m_autoSelector.addOption("Three Score @middle 4 and middle 5 BLUE Auto (Start on Right)",
-				CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
-		m_autoSelector.addOption("Three Score @middle 4 and middle 5 RED Auto (Start on Right)",
-				CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
+		m_autoSelector.addOption("Three Score @middle 4 and middle 5 BLUE Auto (Start on Right, New)",
+				CommandComposer.getThreeScoreBlueC4C5());
+		m_autoSelector.addOption("Three Score @middle 4 and middle 5 RED Auto (Start on Right, New)",
+				CommandComposer.getThreeScoreRedC4C5());
+		// m_autoSelector.addOption("Three Score @middle 4 and middle 5 BLUE Auto (Start
+		// on Right)",
+		// CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
+		// m_autoSelector.addOption("Three Score @middle 4 and middle 5 RED Auto (Start
+		// on Right)",
+		// CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
 		m_autoSelector.addOption("Four Score @blue1, middle 1, and middle 2 BLUE Auto (Start on Left)",
 				CommandComposer.getFourScoreTwoMiddleTopBlueAuto());
 		m_autoSelector.addOption("Four Score @red 1, middle 1, and middle 2 RED Auto (Start on Right)",
@@ -186,11 +195,20 @@ public class RobotContainer {
 				() -> m_driverController.getRawAxis(Axis.kLeftTrigger)));
 		m_driverController.button(Button.kOptions).onTrue(m_driveSubsystem.resetHeadingCommand());
 		// D RIGHT BUMPER - Aim and Shoot
-		m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getAimCommand())
-				.onFalse(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_LOW)
+		// m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getAimAndShootCommand())
+
+		m_driverController.button(Button.kRightBumper)
+				.whileTrue(new DriveWhileAimingCommand(() -> m_driverController.getRawAxis(Axis.kLeftY),
+						() -> m_driverController.getRawAxis(Axis.kLeftX), 5, 0.2, 0.1, m_driveSubsystem,
+						m_aimerSubsystem,
+						m_targeter, m_flywheelSubsystem, m_arduinoSubsystem, m_limeLightSubsystem))
+				// m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getDriveWhileAimingCommand(
+				// () -> m_driverController.getRawAxis(Axis.kLeftY),
+				// () -> m_driverController.getRawAxis(Axis.kLeftX), 5))
+				.onFalse(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_PRESET_DEFAULT)
 						.andThen(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SETTLE))
 						.alongWith(m_flywheelSubsystem.stopFlywheel())
-						.alongWith(new IndexerStopCommand(m_indexerSubsystem)));
+						.alongWith(m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT)));
 		m_driverController.button(Button.kSquare)
 				.whileTrue(m_driveSubsystem.robotOrientedDriveCommand(() -> m_driverController.getRawAxis(Axis.kLeftY),
 						() -> m_driverController.getRawAxis(Axis.kLeftX),
@@ -198,13 +216,18 @@ public class RobotContainer {
 						() -> m_driverController.getRawAxis(Axis.kLeftTrigger)));
 
 		// -------------------Indexer Controls---------------------------------
+		// CIRCLE AND RIGHT BUMPER - Shoot without turning off flywheel
+		m_driverController.button(Button.kCircle).and(
+				m_driverController.button(Button.kRightBumper)).onTrue(new IndexerShootCommand(m_indexerSubsystem));
+
 		// D CIRCLE - Indexer shoot + stop flywheel
-		m_driverController.button(Button.kCircle).onTrue(new IndexerShootCommand(m_indexerSubsystem)
-				.andThen(m_flywheelSubsystem.stopFlywheel()));
+		m_driverController.button(Button.kCircle).and(m_driverController.button(Button.kRightBumper).negate())
+				.onTrue(new IndexerShootCommand(m_indexerSubsystem)
+						.andThen(m_flywheelSubsystem.stopFlywheel()));
+
 		// OP RIGHT BUMPER - Indexer shoot + stop flywheel
 		m_operatorController.button(Button.kRightBumper).onTrue(new IndexerShootCommand(m_indexerSubsystem)
-				.andThen(m_flywheelSubsystem.stopFlywheel())
-				.andThen(m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT)));
+				.andThen(m_flywheelSubsystem.stopFlywheel()));
 
 		// ------------------Intake Controls-----------------------------------
 		// OP break pad
@@ -283,7 +306,13 @@ public class RobotContainer {
 										new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY, 500,
 												2000)))); // 1800 old, 2000 new
 		// OP TRIANGLE - Stop Flywheel
-		m_operatorController.button(Button.kTriangle).onTrue(m_flywheelSubsystem.stopFlywheel());
+		// m_operatorController.button(Button.kTriangle).onTrue(m_flywheelSubsystem.stopFlywheel());
+		m_operatorController.button(Button.kTriangle).onTrue(
+				new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.PRESET_PASS)
+						.andThen(
+								new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SETTLE).alongWith(
+										new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY, 4850,
+												4800))));
 
 		// ------------------Amp Bar Controls -------------------
 		// m_operatorController.button(Button.kX)

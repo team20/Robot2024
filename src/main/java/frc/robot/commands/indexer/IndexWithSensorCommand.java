@@ -15,24 +15,29 @@ public class IndexWithSensorCommand extends Command {
 	public IndexWithSensorCommand(IndexerSubsystem indexerSubsystem, double speed) {
 		m_speed = speed;
 		m_indexerSubsystem = indexerSubsystem;
-		addRequirements(m_indexerSubsystem);
+		if (m_indexerSubsystem != null)
+			addRequirements(m_indexerSubsystem);
 	}
 
 	// Called when the command is initially scheduled.
 	@Override
 	public void initialize() {
-		m_indexerSubsystem.setSpeed(m_speed);
+		if (m_indexerSubsystem != null)
+			m_indexerSubsystem.setSpeed(m_speed);
 	}
 
 	// Returns true when the command should end.
 	@Override
 	public boolean isFinished() {
+		if (m_indexerSubsystem == null)
+			return false;
 		return m_indexerSubsystem.getLimitSwitch();
 	}
 
 	// Returns true when the command should end.
 	@Override
 	public void end(boolean interrupted) {
-		m_indexerSubsystem.stop();
+		if (m_indexerSubsystem != null)
+			m_indexerSubsystem.stop();
 	}
 }
