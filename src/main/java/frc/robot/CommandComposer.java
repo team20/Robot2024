@@ -691,6 +691,7 @@ public class CommandComposer {
 			var t = m_limeLightSubsystem.transformationToward(target);
 			return m_driveSubsystem.getPose().plus(t);
 		};
+		// TODO: we may skip one of the DriveCommands (previously added for accuracy)
 		var driveCommand = new DriveCommand(m_driveSubsystem, s, 0.1, 5);
 		return driveCommand.andThen(new DriveCommand(driveCommand, m_driveSubsystem, s, 0.1, 5));
 	}
@@ -980,6 +981,7 @@ public class CommandComposer {
 			double intermediateTolerance, Pose2d... intermediatePoses) {
 		Command command = getAimWhileMovingCommand(maxDistanceToTarget, intermediateTolerance, intermediatePoses);
 		return sequence(
+				// TODO: should we move .withTimeout(timeout) from command to parallel?
 				parallel(
 						command,
 						CommandComposer.getIntakeWithSensorNoLEDCommand()).withTimeout(timeout),
@@ -1017,8 +1019,9 @@ public class CommandComposer {
 		DriveCommand driveCommand = null;
 		for (Pose2d intermediate : intermediatePoses)
 			driveCommand = addDriveCommand(command, intermediate, intermediateTolerance, driveCommand);
-		command.addCommands(parallel(getAimCommand(() -> m_limeLightSubsystem.distanceToClosestSpeaker()
-				- transformToTarget.get().getTranslation().getNorm()),
+		command.addCommands(parallel(
+				getAimCommand(() -> m_limeLightSubsystem.distanceToClosestSpeaker()
+						- transformToTarget.get().getTranslation().getNorm()),
 				new DriveCommand(driveCommand, m_driveSubsystem,
 						() -> m_driveSubsystem.getPose().plus(transformToTarget.get()), 0.1, 5)));
 		return command;
@@ -1042,6 +1045,10 @@ public class CommandComposer {
 						distance));
 	}
 
+	public static Command getShootCommand(double duration) {
+		return new IndexerShootCommand(duration, m_indexerSubsystem);// .andThen(m_flywheelSubsystem.stopFlywheel());
+	}
+
 	private static DriveCommand addDriveCommand(SequentialCommandGroup g, Pose2d targetPose,
 			double intermediateTolerance, DriveCommand previous) {
 		DriveCommand driveCommand = DriveCommand
@@ -1050,18 +1057,6 @@ public class CommandComposer {
 						m_limeLightSubsystem);
 		g.addCommands(driveCommand);
 		return driveCommand;
-	}
-
-	public static Command getShootCommand(double duration) {
-		return new IndexerShootCommand(duration, m_indexerSubsystem);// .andThen(m_flywheelSubsystem.stopFlywheel());
-	}
-
-	public static Command getShootAfterStartingFlywheelCommand(double duration) {
-		return sequence(
-				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SET_VELOCITY,
-						8000, 8000),
-				new FlywheelCommand(m_flywheelSubsystem, FlywheelOperation.SETTLE, 0, 0),
-				getShootCommand(duration));
 	}
 
 }
