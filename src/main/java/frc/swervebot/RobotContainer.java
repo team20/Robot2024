@@ -145,21 +145,21 @@ public class RobotContainer implements frc.common.RobotContainer {
 				new DriveDistanceCommand(m_driveSubsystem, 1, 0.1)
 						.andThen(new DriveDistanceCommand(m_driveSubsystem, -1, 0.1)),
 		};
-		m_controller.button(Button.kSquare)
-				.whileTrue(
-						new frc.robot.commands.drive.DriveWhileAimingCommand(() -> m_controller.getRawAxis(Axis.kLeftY),
-								() -> m_controller.getRawAxis(Axis.kLeftX), 5, 0.2, 0.1, m_driveSubsystem,
-								m_aimerSubsystem,
-								m_targeter, null, m_arduinoSubsystem, m_limeLightSubsystem));
 		// m_controller.button(Button.kSquare)
-		// .whileTrue(CommandComposer.getFiveScoreBlue321C1());
+		// .whileTrue(
+		// new frc.robot.commands.drive.DriveWhileAimingCommand(() ->
+		// m_controller.getRawAxis(Axis.kLeftY),
+		// () -> m_controller.getRawAxis(Axis.kLeftX), 5, 0.2, 0.1, m_driveSubsystem,
+		// m_aimerSubsystem,
+		// m_targeter, null, m_arduinoSubsystem, m_limeLightSubsystem));
+		m_controller.button(Button.kSquare)
+				.whileTrue(CommandComposer.getFiveScoreBlue321C1());
 		m_controller.button(Button.kX)
 				.whileTrue(CommandComposer.getFiveScoreRed321C1());
 		m_controller.button(Button.kCircle)
 				.whileTrue(CommandComposer.getThreeScoreBlueC4C5());
 		m_controller.button(Button.kTriangle)
-				.whileTrue(
-						CommandComposer.getThreeScoreRedC4C5());
+				.whileTrue(CommandComposer.getThreeScoreRedC4C5());
 		// m_controller.button(Button.kCircle)
 		// .whileTrue(CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
 		// m_controller.button(Button.kTriangle)
