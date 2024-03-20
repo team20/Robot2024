@@ -7,7 +7,6 @@ package frc.robot.commands.flywheel;
 import java.io.File;
 
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.FlywheelSubsystem;
@@ -17,7 +16,6 @@ public class FlywheelCommand extends Command {
 	private final FlywheelSubsystem m_flywheelSubsystem;
 	private final double m_topRPM;
 	private final double m_bottomRPM;
-	Clip m_clip;
 
 	public enum FlywheelOperation {
 		/** Set the velocity and end immediately. */
@@ -43,14 +41,6 @@ public class FlywheelCommand extends Command {
 		m_operation = operation;
 		if (m_flywheelSubsystem != null)
 			addRequirements(m_flywheelSubsystem);
-		try {
-			m_clip = AudioSystem.getClip();
-			m_clip.open(AudioSystem
-					.getAudioInputStream(
-							new File("." + File.separator + "src" + File.separator + "main" + File.separator
-									+ "deploy" + File.separator + "flywheel.wav")));
-		} catch (Exception e) {
-		}
 	}
 
 	// Called when the command is initially scheduled.
@@ -63,7 +53,17 @@ public class FlywheelCommand extends Command {
 			}
 		}
 		if (m_operation == FlywheelOperation.SETTLE)
-			m_clip.start();
+			new Thread(() -> {
+				try {
+					var clip = AudioSystem.getClip();
+					clip.open(AudioSystem
+							.getAudioInputStream(
+									new File("." + File.separator + "src" + File.separator + "main" + File.separator
+											+ "deploy" + File.separator + "flywheel.wav")));
+					clip.start();
+				} catch (Exception e) {
+				}
+			}).start();
 	}
 
 	// Returns true when the command should end.
@@ -78,12 +78,6 @@ public class FlywheelCommand extends Command {
 		}
 		System.out.println("Unreachable code in FlywheelCommand");
 		return false; // unreachable code
-	}
-
-	// Called once the command ends or is interrupted.
-	@Override
-	public void end(boolean interrupted) {
-		m_clip.stop();
 	}
 
 }

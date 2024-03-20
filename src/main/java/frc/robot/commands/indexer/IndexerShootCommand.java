@@ -7,7 +7,6 @@ package frc.robot.commands.indexer;
 import java.io.File;
 
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,7 +17,6 @@ public class IndexerShootCommand extends Command {
 	private IndexerSubsystem m_indexerSubsystem;
 	private Timer m_timer;
 	private double m_duration;
-	Clip m_clip;
 
 	/** Creates a new IndexerShootCommand. */
 	public IndexerShootCommand(IndexerSubsystem indexerSubsystem) {
@@ -31,14 +29,6 @@ public class IndexerShootCommand extends Command {
 		m_indexerSubsystem = indexerSubsystem;
 		if (m_indexerSubsystem != null)
 			addRequirements(indexerSubsystem);
-		try {
-			m_clip = AudioSystem.getClip();
-			m_clip.open(AudioSystem
-					.getAudioInputStream(
-							new File("." + File.separator + "src" + File.separator + "main" + File.separator
-									+ "deploy" + File.separator + "shot.wav")));
-		} catch (Exception e) {
-		}
 	}
 
 	// Called when the command is initially scheduled.
@@ -48,7 +38,17 @@ public class IndexerShootCommand extends Command {
 		m_timer.start();
 		if (m_indexerSubsystem != null)
 			m_indexerSubsystem.setSpeed(Constants.IndexerConstants.kKickSpeed);
-		m_clip.start();
+		new Thread(() -> {
+			try {
+				var clip = AudioSystem.getClip();
+				clip.open(AudioSystem
+						.getAudioInputStream(
+								new File("." + File.separator + "src" + File.separator + "main" + File.separator
+										+ "deploy" + File.separator + "shot.wav")));
+				clip.start();
+			} catch (Exception e) {
+			}
+		}).start();
 	}
 
 	// Called once the command ends or is interrupted.
@@ -56,7 +56,6 @@ public class IndexerShootCommand extends Command {
 	public void end(boolean interrupted) {
 		if (m_indexerSubsystem != null)
 			m_indexerSubsystem.stop();
-		m_clip.stop();
 	}
 
 	// Returns true when the command should end.
