@@ -235,28 +235,28 @@ public final class Constants {
 		public static final Pose kBlueAmpPose = new Pose(-6.44, 3.75, 90);
 
 		public static final Pose kBlueNoteOnePose = new Pose(-6.0 + 0.55, 2.82 - 0.25 + 0.4, 180 + 25);
-		public static final Pose kBlueNoteTwoPose = new Pose(-6.0 + 0.55 - 0.2, 1.65, 180);
+		public static final Pose kBlueNoteTwoPose = new Pose(-6.0 + 0.55 - 0.2, 1.45, 180);
 		// to avoid collision
 		public static final Pose kBlueNoteThreePose = new Pose(-6.0 + 0.45 - 0.2, 0.0 + 0.45 - 0.3, 180 - 25);
 
 		public static final Pose kBlueCenterNoteOnePose = new Pose(-0.2 + 0.2, 3.4, 180);
 		public static final Pose kBlueCenterNoteTwoPose = new Pose(-0.2 + 0.25 + 0.4, 1.7 + 0.25, 180 - 45);
 		public static final Pose kBlueCenterNoteThreePose = new Pose(-0.2 + 0.4, 0, 180);
-		public static final Pose kBlueCenterNoteFourPose = new Pose(-0.2 + 0.25 + 0.4, -1.7 - 0.05, 180 + 30);
-		public static final Pose kBlueCenterNoteFivePose = new Pose(-0.2 + 0.4, -3.4 + 0.5, 180 - 15);
+		public static final Pose kBlueCenterNoteFourPose = new Pose(-0.2 + 0.25 + 0.2, -1.7 + 0.10, 180 + 30);
+		public static final Pose kBlueCenterNoteFivePose = new Pose(-0.2 + 0.2, -3.4 + 0.3, 180 - 15);
 
 		public static final Translation2d kRedSpeakerPosition = new Translation2d(7.87, 1.45);
 		public static final Pose kRedAmpPose = new Pose(6.44, 3.75, 90);
 
 		public static final Pose kRedNoteOnePose = new Pose(6.0 - 0.55, 2.82 - 0.25 + 0.4, -25);
-		public static final Pose kRedNoteTwoPose = new Pose(6.0 - 0.55 + 0.2, 1.65, 0);
+		public static final Pose kRedNoteTwoPose = new Pose(6.0 - 0.55 + 0.2, 1.45, 0);
 		// to avoid collision
 		public static final Pose kRedNoteThreePose = new Pose(6.0 - 0.45 + 0.2, 0.0 + 0.45 - 0.3, 25);
 
 		public static final Pose kRedCenterNoteOnePose = new Pose(0.2 - 0.2, 3.4, 0);
 		public static final Pose kRedCenterNoteTwoPose = new Pose(0.2 - 0.25 - 0.4, 1.7 + 0.25, 45);
 		public static final Pose kRedCenterNoteThreePose = new Pose(0.2 - 0.4, 0, 0);
-		public static final Pose kRedCenterNoteFourPose = new Pose(0.2 - 0.25 - 0.4, -1.7 - 0.05, -30);
-		public static final Pose kRedCenterNoteFivePose = new Pose(0.2 - 0.4, -3.4 + 0.5, 0 + 15);
+		public static final Pose kRedCenterNoteFourPose = new Pose(0.2 - 0.25 - 0.2, -1.7 + 0.10, -30);
+		public static final Pose kRedCenterNoteFivePose = new Pose(0.2 - 0.2, -3.4 + 0.3, 0 + 15);
 	}
 }
