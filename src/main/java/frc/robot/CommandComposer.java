@@ -904,7 +904,7 @@ public class CommandComposer {
 				getPickUpNoteAtCommand(kBlueCenterNoteFivePose, 0.5, 6, 10, new Pose(-3,
 						-3.2, 180)),
 				getAimWhileMovingAndShootCommand(3.5, 3.7, 10,
-						kBlueCenterNoteFivePose.add(new Pose(-3, 0, -20))));
+						kBlueCenterNoteFivePose.add(new Pose(-3.5, 0, -20))));
 	}
 
 	public static Command getThreeScoreRedC4C5() {
@@ -917,7 +917,7 @@ public class CommandComposer {
 				getPickUpNoteAtCommand(kRedCenterNoteFivePose, 0.5, 6, 10, new Pose(3, -3.2,
 						0)),
 				getAimWhileMovingAndShootCommand(3.5, 3.7, 10,
-						kRedCenterNoteFivePose.add(new Pose(3, 0, 20))));
+						kRedCenterNoteFivePose.add(new Pose(3.5, 0, 20))));
 	}
 
 	public static Command getFourScoreBlue321() {
