@@ -15,6 +15,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import frc.robot.CommandComposer;
+import frc.robot.Constants.ControllerConstants.Axis;
+import frc.robot.Constants.ControllerConstants.Button;
 import frc.robot.Robot;
 import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.drive.DriveCommand;
@@ -29,8 +31,6 @@ import frc.robot.subsystems.LimeLightSubsystem.Pose;
 import frc.robot.subsystems.PneumaticsSubsystem;
 import frc.robot.subsystems.PoseEstimationSubsystem;
 import frc.swervebot.Constants.ControllerConstants;
-import frc.swervebot.Constants.ControllerConstants.Axis;
-import frc.swervebot.Constants.ControllerConstants.Button;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -153,7 +153,11 @@ public class RobotContainer implements frc.common.RobotContainer {
 		// m_aimerSubsystem,
 		// m_targeter, null, m_arduinoSubsystem, m_limeLightSubsystem));
 		m_controller.button(Button.kSquare)
-				.whileTrue(CommandComposer.getFiveScoreBlue321C1());
+				.whileTrue(CommandComposer.getDriveWhileAimingToAmpCornerCommand(
+						() -> m_controller.getRawAxis(Axis.kLeftY),
+						() -> m_controller.getRawAxis(Axis.kLeftX)));
+		// m_controller.button(Button.kSquare)
+		// .whileTrue(CommandComposer.getFiveScoreBlue321C1());
 		m_controller.button(Button.kX)
 				.whileTrue(CommandComposer.getFiveScoreRed321C1());
 		m_controller.button(Button.kCircle)

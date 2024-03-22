@@ -897,11 +897,13 @@ public class CommandComposer {
 		return getAimWhileMovingAndShootCommand(maxDistanceToTarget, timeout, 0);
 	}
 
+	// changes made after the last match on 3/22
 	public static Command getThreeScoreBlueC4C5() {
 		return sequence(
 				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
-				getPickUpNoteAtCommand(kBlueCenterNoteFourPose, 3, 6, 20,
-						new Pose(-6.8, -3.0, 180)),
+				getPickUpNoteAtCommand(kBlueCenterNoteFourPose, 0.5, 6, 20,
+						new Pose(-6.8, -2.7, 180),
+						new Pose(-1.5, -2.7, 180)),
 				getAimWhileMovingAndShootCommand(3.5, 4, 20,
 						new Pose(-3, -3, 180)),
 				getPickUpNoteAtCommand(kBlueCenterNoteFivePose, 0.5, 6, 20,
@@ -910,11 +912,13 @@ public class CommandComposer {
 						kBlueCenterNoteFivePose.add(new Pose(-3.3, 0, -20))));
 	}
 
+	// changes made after the last match on 3/22
 	public static Command getThreeScoreRedC4C5() {
 		return sequence(
 				parallel(m_pneumaticsSubsystem.downIntakeCommand(), getAimAndShootAuto(.5, 0.25)),
-				getPickUpNoteAtCommand(kRedCenterNoteFourPose, 3, 6, 20,
-						new Pose(6.8, -3.0, 0)),
+				getPickUpNoteAtCommand(kRedCenterNoteFourPose, 0.5, 6, 20,
+						new Pose(6.8, -2.7, 0),
+						new Pose(1.5, -2.7, 0)),
 				getAimWhileMovingAndShootCommand(3.5, 4, 20,
 						new Pose(3, -3, 0)),
 				getPickUpNoteAtCommand(kRedCenterNoteFivePose, 0.5, 6, 20,
@@ -1048,6 +1052,15 @@ public class CommandComposer {
 						distance));
 	}
 
+	public static Command getDriveWhileAimingToAmpCornerCommand(Supplier<Double> forwardSpeed,
+			Supplier<Double> strafeSpeed) {
+		Supplier<Translation2d> targetSupplier = () -> DriverStation.getAlliance().get() == Alliance.Blue
+				? kBlueAmpCorner
+				: kRedAmpCorner;
+		return new DriveWhileAimingExtendedCommand(forwardSpeed, strafeSpeed, targetSupplier, 5, 0.2, 0.1,
+				m_driveSubsystem, m_aimerSubsystem, m_flywheelSubsystem, m_arduinoSubsystem, m_limeLightSubsystem);
+	}
+
 	public static Command getShootCommand(double duration) {
 		return new IndexerShootCommand(duration, m_indexerSubsystem);// .andThen(m_flywheelSubsystem.stopFlywheel());
 	}
@@ -1060,18 +1073,6 @@ public class CommandComposer {
 						m_limeLightSubsystem);
 		g.addCommands(driveCommand);
 		return driveCommand;
-	}
-
-	public static Command getDriveWhileAimingToAmpCornerCommand(Supplier<Double> forwardSpeed,
-			Supplier<Double> strafeSpeed,
-			double shootingAngle, double flyweelSpeed) {
-		Supplier<Translation2d> targetSupplier = () -> DriverStation.getAlliance().get() == Alliance.Blue
-				? kBlueAmpCorner
-				: kRedAmpCorner;
-		return new DriveWhileAimingExtendedCommand(forwardSpeed, strafeSpeed, targetSupplier, 5, 0.2, 0.1,
-				m_driveSubsystem,
-				m_aimerSubsystem, shootingAngle, flyweelSpeed, m_targeter, m_flywheelSubsystem, m_arduinoSubsystem,
-				m_limeLightSubsystem);
 	}
 
 }
