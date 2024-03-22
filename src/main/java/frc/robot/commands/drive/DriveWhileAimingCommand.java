@@ -60,6 +60,12 @@ public class DriveWhileAimingCommand extends Command {
 	private AimerSubsystem m_aimerSubsystem;
 
 	/**
+	 * The {@code Supplier} that calculates the shooting
+	 * distance (the distance to the target is used if {@code null})
+	 */
+	private Supplier<Double> m_distanceSupplier = null;
+
+	/**
 	 * The {@code Targeter} used by this {@code DriveWhileAimingCommand}.
 	 */
 	private Targeter m_targeter;
@@ -135,6 +141,45 @@ public class DriveWhileAimingCommand extends Command {
 			Targeter targeter,
 			FlywheelSubsystem flywheelSubsystem, ArduinoSubsystem arduinoSubsystem,
 			LimeLightSubsystem limeLightSubsystem) {
+		this(forwardSpeed, strafeSpeed, angleTolerance, shootingDelay, distanceSensitivity, driveSubsystem,
+				aimerSubsystem, null, targeter, flywheelSubsystem, arduinoSubsystem, limeLightSubsystem);
+	}
+
+	/**
+	 * Constructs a new {@code DriveWhileAimingCommand} whose purpose is to move the
+	 * robot to a certain target pose.
+	 * 
+	 * @param forwardSpeed        the supplier that provides the forward speed in
+	 *                            meters
+	 *                            per second
+	 * @param strafeSpeed         the supplier that provides the strafe speed in
+	 *                            meters per second
+	 * @param angleTolerance      the angle error in degrees which is tolerable
+	 * @param shootingDelay       the shooting delay in seconds
+	 * @param distanceSensitivity the impact of distance changes on aiming (< 1)
+	 * @param driveSubsystem      the {@code DriveSubsystem} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 * @param aimerSubsystem      the {@code AimerSubsystem} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 * @param distanceSupplier    the {@code Supplier} that calculates the shooting
+	 *                            distance (the distance to the target is used if
+	 *                            {@code null})
+	 * @param targeter            the {@code Targeter} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 * @param flywheelSubsystem   the {@code FlywheelSubsystem} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 * @param arduinoSubsystem    the {@code ArduinoSubsystem} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 * @param limeLightSubsystem  the {@code LimeLightSubsystem} used by the
+	 *                            {@code DriveWhileAimingCommand}
+	 */
+	public DriveWhileAimingCommand(Supplier<Double> forwardSpeed, Supplier<Double> strafeSpeed,
+			double angleTolerance, double shootingDelay, double distanceSensitivity, DriveSubsystem driveSubsystem,
+			AimerSubsystem aimerSubsystem,
+			Supplier<Double> distanceSupplier,
+			Targeter targeter,
+			FlywheelSubsystem flywheelSubsystem, ArduinoSubsystem arduinoSubsystem,
+			LimeLightSubsystem limeLightSubsystem) {
 		m_forwardSpeed = forwardSpeed;
 		m_strafeSpeed = strafeSpeed;
 		m_shootingDelay = shootingDelay;
@@ -146,6 +191,7 @@ public class DriveWhileAimingCommand extends Command {
 		m_controllerYaw.setGoal(0);
 		m_driveSubsystem = driveSubsystem;
 		m_aimerSubsystem = aimerSubsystem;
+		m_distanceSupplier = distanceSupplier;
 		m_targeter = targeter;
 		m_flywheelSubsystem = flywheelSubsystem;
 		m_arduinoSubsystem = arduinoSubsystem;
@@ -198,7 +244,8 @@ public class DriveWhileAimingCommand extends Command {
 			var transform = transformationToClosestSpeaker();
 			double angle = transform.getRotation().getDegrees();
 			rotSpeed = m_controllerYaw.calculate(-angle); // to achieve angle error 0
-			double distance = transform.getTranslation().getNorm();
+			double distance = m_distanceSupplier != null ? m_distanceSupplier.get()
+					: transform.getTranslation().getNorm();
 			double actuatorHeightSetpoint = m_targeter.getAngle(distance);
 			m_aimerSubsystem.setAimerHeight(actuatorHeightSetpoint);
 			if (timestamp == null || timestamp < System.currentTimeMillis()) {

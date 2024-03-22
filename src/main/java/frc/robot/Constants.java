@@ -232,6 +232,8 @@ public final class Constants {
 
 	public static final class PoseConstants {
 		public static final Translation2d kBlueSpeakerPosition = new Translation2d(-7.87, 1.45);
+		public static final Translation2d kBlueAmpCorner = new Translation2d(-7.87, 3.75);
+
 		public static final Pose kBlueAmpPose = new Pose(-6.44, 3.75, 90);
 
 		public static final Pose kBlueNoteOnePose = new Pose(-6.0 + 0.55, 2.82 - 0.25 + 0.4, 180 + 25);
@@ -244,8 +246,11 @@ public final class Constants {
 		public static final Pose kBlueCenterNoteThreePose = new Pose(-0.2 + 0.4, 0, 180);
 		public static final Pose kBlueCenterNoteFourPose = new Pose(-0.2 + 0.25, -1.7 + 0.10 + 0.15, 180 + 30);
 		public static final Pose kBlueCenterNoteFivePose = new Pose(-0.2 + 0.2, -3.4 + 0.3, 180 - 15);
+		public static final Pose kBlueFeederPose = new Pose(0.0, -2.2, 180 - 15);
 
 		public static final Translation2d kRedSpeakerPosition = new Translation2d(7.87, 1.45);
+		public static final Translation2d kRedAmpCorner = new Translation2d(7.87, 3.75);
+
 		public static final Pose kRedAmpPose = new Pose(6.44, 3.75, 90);
 
 		public static final Pose kRedNoteOnePose = new Pose(6.0 - 0.55, 2.82 - 0.25 + 0.4, -25);
@@ -258,5 +263,6 @@ public final class Constants {
 		public static final Pose kRedCenterNoteThreePose = new Pose(0.2 - 0.4, 0, 0);
 		public static final Pose kRedCenterNoteFourPose = new Pose(0.2 - 0.25, -1.7 + 0.10 + 0.15, -30);
 		public static final Pose kRedCenterNoteFivePose = new Pose(0.2 - 0.2, -3.4 + 0.3, 0 + 15);
+		public static final Pose kRedFeederPose = new Pose(0.0, -2.2, -25);
 	}
 }
