@@ -197,7 +197,6 @@ public class DriveCommand extends Command {
 		// m_controllerYaw.atGoal() ? 0 : speedYaw, true);
 		m_driveSubsystem.setModuleStates(speedX, speedY, speedYaw, true);
 
-		// TODO: Hwang check if it is better to apply threshold.
 		// speedX = applyThreshold(speedX, DriveConstants.kMinSpeed);
 		// speedY = applyThreshold(speedY, DriveConstants.kMinSpeed);
 	}
@@ -220,7 +219,25 @@ public class DriveCommand extends Command {
 	 */
 	@Override
 	public boolean isFinished() {
-		return m_controllerX.atGoal() && m_controllerY.atGoal() && m_controllerYaw.atGoal();
+		// return m_controllerX.atGoal() && m_controllerY.atGoal() &&
+		// m_controllerYaw.atGoal();
+		// TODO: check if the follwoing change works correctly
+		Pose2d pose = m_driveSubsystem.getPose();
+		return atGoal(m_controllerX, pose.getX()) && atGoal(m_controllerY, pose.getY())
+				&& atGoal(m_controllerYaw, pose.getRotation().getDegrees());
+	}
+
+	/**
+	 * Determines whether or not the specified {@code ProfiledPIDController} is at
+	 * its goal.
+	 * 
+	 * @param m_controller a {@code ProfiledPIDController}
+	 * @param measurement  the current measurement of the process variable
+	 * @return {@code true} if the specified {@code ProfiledPIDController} is at
+	 *         its goal; {@code false} otherwise
+	 */
+	private boolean atGoal(ProfiledPIDController m_controller, double measurement) {
+		return Math.abs(m_controller.getGoal().position - measurement) < m_controller.getPositionTolerance();
 	}
 
 	/**
