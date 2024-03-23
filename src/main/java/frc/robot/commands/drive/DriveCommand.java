@@ -223,8 +223,10 @@ public class DriveCommand extends Command {
 		// m_controllerYaw.atGoal();
 		// TODO: check if the follwoing change works correctly
 		Pose2d pose = m_driveSubsystem.getPose();
-		return atGoal(m_controllerX, pose.getX()) && atGoal(m_controllerY, pose.getY())
-				&& atGoal(m_controllerYaw, pose.getRotation().getDegrees());
+		return (m_controllerX.atGoal() && m_controllerY.atGoal() && m_controllerYaw.atGoal())
+				||
+				(atGoal(m_controllerX, pose.getX()) && atGoal(m_controllerY, pose.getY())
+						&& atGoal(m_controllerYaw, pose.getRotation().getDegrees()));
 	}
 
 	/**
