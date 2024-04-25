@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -118,6 +121,14 @@ public final class Constants {
 		public static final int kSteerPeakCurrentLimit = kSteerSmartCurrentLimit + 15;
 		// The amount of time to go from 0 to full power in seconds
 		public static final double kRampRate = .1; // .1
+		public static final TalonFXConfiguration kDriveConfig = new TalonFXConfiguration();
+		static {
+			kDriveConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+			kDriveConfig.CurrentLimits.SupplyCurrentLimit = kDrivePeakCurrentLimit;
+			kDriveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+			kDriveConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = kRampRate;
+			kDriveConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = kRampRate;
+		}
 	}
 
 	public static final class FlywheelConstants {
