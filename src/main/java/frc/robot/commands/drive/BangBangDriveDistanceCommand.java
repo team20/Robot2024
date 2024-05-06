@@ -53,7 +53,7 @@ public class BangBangDriveDistanceCommand extends Command {
 		}
 
 		double error = getDiff();
-		double kP = 0.1;
+		double kP = 1.2;
 		double speed = error * kP;
 		if (speed > kMaxSpeed) {
 			speed = kMaxSpeed;

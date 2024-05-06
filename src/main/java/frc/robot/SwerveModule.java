@@ -16,7 +16,11 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Contains all the hardware and controllers for a swerve module.
@@ -27,6 +31,8 @@ public class SwerveModule {
 	private final CANSparkMax m_driveMotor;
 	private final RelativeEncoder m_driveEncoder;
 	private final CANSparkMax m_steerMotor;
+	private final DCMotorSim m_driveMotorModel = new DCMotorSim(DCMotor.getNEO(1), 1, 0.0005);
+	private final DCMotorSim m_steerMotorModel = new DCMotorSim(DCMotor.getNEO(1), 6.12, 0.0005);
 
 	public SwerveModule(int CANport, int drivePort, int steerPort) {
 		m_CANCoder = new CANcoder(CANport);
@@ -34,11 +40,9 @@ public class SwerveModule {
 		m_steerMotor = new CANSparkMax(steerPort, MotorType.kBrushless);
 		m_PIDController.setIZone(kIz);
 		m_driveEncoder = m_driveMotor.getEncoder();
-		configMotorController(m_driveMotor, kDrivePeakCurrentLimit, kDriveSmartCurrentLimit);
+		configMotorController(m_driveMotor, kDriveSmartCurrentLimit, kDrivePeakCurrentLimit);
 		configMotorController(m_steerMotor, kSteerSmartCurrentLimit, kSteerPeakCurrentLimit);
 		m_PIDController.enableContinuousInput(0, 360);
-		m_driveMotor.setOpenLoopRampRate(kRampRate);
-		m_driveMotor.setClosedLoopRampRate(kRampRate);
 	}
 
 	/**
@@ -46,7 +50,7 @@ public class SwerveModule {
 	 * 
 	 * @param motorController The CANSparkMax to configure
 	 */
-	private void configMotorController(CANSparkMax motorController, int peakCurrentLimit, int smartCurrentLimit) {
+	private void configMotorController(CANSparkMax motorController, int smartCurrentLimit, int peakCurrentLimit) {
 		motorController.restoreFactoryDefaults();
 		motorController.setIdleMode(IdleMode.kBrake);
 		motorController.enableVoltageCompensation(12);
@@ -60,7 +64,7 @@ public class SwerveModule {
 	 * @return The position
 	 */
 	public double getDriveEncoderPosition() {
-		return this.m_driveEncoder.getPosition() * kMotorRotationsPerMeter;
+		return m_driveEncoder.getPosition() * kMotorRotationsPerMeter;
 	}
 
 	public double getSteerCurrent() {
@@ -79,12 +83,12 @@ public class SwerveModule {
 	}
 
 	/**
-	 * Gets the current drive motor speed.
+	 * Gets the current drive motor voltage.
 	 * 
-	 * @return The motor speed in percent output
+	 * @return The motor speed in voltage
 	 */
-	public double getDriveSpeed() {
-		return m_driveMotor.getAppliedOutput();
+	public double getDriveVoltage() {
+		return m_driveMotor.getAppliedOutput() * 12;
 	}
 
 	/**
@@ -106,15 +110,6 @@ public class SwerveModule {
 	}
 
 	/**
-	 * Sets the module angle in degrees.
-	 * 
-	 * @param angle The angle in degrees
-	 */
-	public void setModuleAngle(double angle) {
-		m_PIDController.setSetpoint(angle);
-	}
-
-	/**
 	 * Returns the module position.
 	 * 
 	 * @return The module position
@@ -129,7 +124,7 @@ public class SwerveModule {
 	 * @return The module state
 	 */
 	public SwerveModuleState getModuleState() {
-		return new SwerveModuleState(m_driveMotor.getAppliedOutput(), Rotation2d.fromDegrees(getModuleAngle()));
+		return new SwerveModuleState(getDriveVoltage(), Rotation2d.fromDegrees(getModuleAngle()));
 	}
 
 	/**
@@ -149,9 +144,19 @@ public class SwerveModule {
 		} else if (currVoltage < 10) {
 			power *= 0.8;
 		}
-		m_driveMotor.set(power);
+		m_driveMotor.setVoltage(power);
 		double turnPower = m_PIDController.calculate(getModuleAngle(), state.angle.getDegrees());
-		m_steerMotor.set(turnPower);
+		m_steerMotor.setVoltage(turnPower);
+		if (RobotBase.isSimulation()) {
+			m_driveMotorModel.setInputVoltage(power);
+			m_driveMotorModel.update(0.02);
+			m_driveMotor.getEncoder().setPosition(m_driveMotorModel.getAngularPositionRotations());
+			var encoderSimState = m_CANCoder.getSimState();
+			m_steerMotorModel.setInputVoltage(turnPower);
+			m_steerMotorModel.update(0.02);
+			encoderSimState.setRawPosition(m_steerMotorModel.getAngularPositionRotations());
+			encoderSimState.setVelocity(m_steerMotorModel.getAngularVelocityRPM());
+		}
 	}
 
 	/**
@@ -160,22 +165,8 @@ public class SwerveModule {
 	 * @param angle
 	 */
 	public void setAngle(double angle) {
-		double out = m_PIDController.calculate(getModuleAngle(), angle);
-		m_steerMotor.set(out);
+		var out = m_PIDController.calculate(getModuleAngle(), angle);
+		SmartDashboard.putNumber("PID out" + m_driveMotor.getDeviceId(), out);
+		m_steerMotor.setVoltage(out);
 	}
-
-	public void setSpeed(double speed) {
-		m_driveMotor.set(speed);
-	}
-
-	public void setIdleMode(IdleMode mode) {
-		m_driveMotor.setIdleMode(mode);
-		m_steerMotor.setIdleMode(mode);
-	}
-
-	public void setRampRate(double rampRate) {
-		m_driveMotor.setOpenLoopRampRate(rampRate);
-		m_driveMotor.setClosedLoopRampRate(rampRate);
-	}
-
 }

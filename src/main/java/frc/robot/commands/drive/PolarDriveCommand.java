@@ -12,7 +12,7 @@ public class PolarDriveCommand extends Command {
 	private double m_distance;
 	private double m_tolerance;
 	private double m_angle;
-	private final ClampedController m_controller = new ClampedController(0.3, 0.2, .3);
+	private final ClampedController m_controller = new ClampedController(3.6, 2.4, 3.6);
 
 	/**
 	 * Creates a command to drive to a point by specifying a distance and and angle

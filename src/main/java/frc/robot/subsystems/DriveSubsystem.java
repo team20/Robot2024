@@ -9,12 +9,10 @@ import static frc.robot.Constants.DriveConstants.*;
 import java.util.function.Supplier;
 
 import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.CANSparkBase.IdleMode;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
@@ -45,7 +43,7 @@ public class DriveSubsystem extends SubsystemBase {
 	private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
 	private double m_headingOffset = 0;
 	private Pose2d m_pose = new Pose2d(0, 0, new Rotation2d());
-	private Rotation2d m_heading = new Rotation2d(Math.PI / 2);
+	private Rotation2d m_heading = new Rotation2d();
 	private final Field2d m_field = new Field2d();
 
 	private final ProtobufPublisher<Pose2d> m_posePublisher;
@@ -117,13 +115,6 @@ public class DriveSubsystem extends SubsystemBase {
 		m_backRight.resetDriveEncoder();
 	}
 
-	public void setIdleMode(IdleMode mode) {
-		m_frontLeft.setIdleMode(mode);
-		m_frontRight.setIdleMode(mode);
-		m_backLeft.setIdleMode(mode);
-		m_backRight.setIdleMode(mode);
-	}
-
 	/**
 	 * Returns robot pose.
 	 * 
@@ -145,9 +136,6 @@ public class DriveSubsystem extends SubsystemBase {
 		if (isFieldRelative) {
 			speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getHeading());
 		}
-		if (RobotBase.isSimulation()) {
-			updateSimPose(speeds);
-		}
 		// SmartDashboard.putNumber("Heading Radians", getHeading().getRadians());
 		// SmartDashboard.putNumber("Heading Degrees", getHeading().getDegrees());
 
@@ -158,33 +146,11 @@ public class DriveSubsystem extends SubsystemBase {
 	}
 
 	/**
-	 * Updates the sim pose.
-	 * 
-	 * @param speeds The chassis speeds to use
-	 */
-	private void updateSimPose(ChassisSpeeds speeds) {
-		var transform = new Transform2d(speeds.vxMetersPerSecond * kModuleResponseTimeSeconds * 3,
-				speeds.vyMetersPerSecond * kModuleResponseTimeSeconds * 3, new Rotation2d(
-						speeds.omegaRadiansPerSecond * kModuleResponseTimeSeconds * 3));
-
-		m_pose = m_pose.plus(transform);
-		m_heading = m_pose.getRotation();
-		m_posePublisher.set(m_pose);
-	}
-
-	/**
 	 * 
 	 * Stops all the motors.
 	 */
 	public void stopDriving() {
 		setModuleStates(calculateModuleStates(new ChassisSpeeds(0, 0, 0), true));
-	}
-
-	public void setRampRate(double rampRate) {
-		m_backLeft.setRampRate(rampRate);
-		m_backRight.setRampRate(rampRate);
-		m_frontLeft.setRampRate(rampRate);
-		m_frontRight.setRampRate(rampRate);
 	}
 
 	/**
@@ -237,19 +203,12 @@ public class DriveSubsystem extends SubsystemBase {
 		m_backRight.setModuleState(moduleState);
 	}
 
-	public void setModuleSpeeds(double speed) {
-		m_frontLeft.setSpeed(speed);
-		m_frontRight.setSpeed(speed);
-		m_backLeft.setSpeed(speed);
-		m_backRight.setSpeed(speed);
-	}
-
 	/**
 	 * Sets module states for each swerve module.
 	 * 
-	 * @param speedFwd        The forward speed
-	 * @param speedSide       The sideways speed
-	 * @param speedRot        The rotation speed
+	 * @param speedFwd        The forward speed in voltage
+	 * @param speedSide       The sideways speed in voltage
+	 * @param speedRot        The rotation speed in voltage
 	 * @param isFieldRelative Whether or not the speeds are relative to the field
 	 */
 	public void setModuleStates(double speedFwd, double speedSide, double speedRot, boolean isFieldRelative) {
@@ -261,10 +220,7 @@ public class DriveSubsystem extends SubsystemBase {
 		// SmartDashboard.putNumber("Current Position",
 		// getModulePositions()[0].distanceMeters);
 		// SmartDashboard.putNumber("Heading Degrees", getHeading().getDegrees());
-		if (RobotBase.isReal()) {
-			m_pose = m_odometry.update(getHeading(), getModulePositions());
-			m_posePublisher.set(m_pose);
-		}
+		m_posePublisher.set(m_odometry.update(getHeading(), getModulePositions()));
 		SwerveModuleState[] states = { m_frontLeft.getModuleState(), m_frontRight.getModuleState(),
 				m_backLeft.getModuleState(), m_backRight.getModuleState() };
 		m_currentModuleStatePublisher.set(states);
@@ -303,16 +259,16 @@ public class DriveSubsystem extends SubsystemBase {
 		return run(() -> {
 			// Get the forward, strafe, and rotation speed, using a deadband on the joystick
 			// input so slight movements don't move the robot
-			double rotSpeed = kTeleopMaxTurnSpeed * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
+			double rotSpeed = kTeleopMaxTurnVoltage * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
 					ControllerConstants.kDeadzone);
 			rotSpeed = Math.signum(rotSpeed) * (rotSpeed * rotSpeed);
-			double fwdSpeed = kTeleopMaxSpeed
+			double fwdSpeed = -kTeleopMaxVoltage
 					* MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
 			fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
-			double strSpeed = kTeleopMaxSpeed
+			double strSpeed = -kTeleopMaxVoltage
 					* MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
 			strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
-			setModuleStates(calculateModuleStates(new ChassisSpeeds(fwdSpeed, strSpeed, rotSpeed), true));
+			setModuleStates(fwdSpeed, strSpeed, rotSpeed, true);
 		}).withName("DefaultDriveCommand");
 	}
 
@@ -327,16 +283,16 @@ public class DriveSubsystem extends SubsystemBase {
 		return run(() -> {
 			// Get the forward, strafe, and rotation speed, using a deadband on the joystick
 			// input so slight movements don't move the robot
-			double rotSpeed = kTeleopMaxTurnSpeed * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
+			double rotSpeed = kTeleopMaxTurnVoltage * MathUtil.applyDeadband((rotationRight.get() - rotationLeft.get()),
 					ControllerConstants.kDeadzone);
-			rotSpeed = Math.signum(rotSpeed) * (rotSpeed * rotSpeed);
-			double fwdSpeed = kTeleopMaxSpeed
+			rotSpeed = Math.signum(rotSpeed) * (rotSpeed * rotSpeed) * 12.0;
+			double fwdSpeed = kTeleopMaxVoltage
 					* MathUtil.applyDeadband(forwardSpeed.get(), ControllerConstants.kDeadzone);
-			fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
-			double strSpeed = kTeleopMaxSpeed
+			fwdSpeed = -Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed) * 12.0;
+			double strSpeed = kTeleopMaxVoltage
 					* MathUtil.applyDeadband(strafeSpeed.get(), ControllerConstants.kDeadzone);
-			strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
-			setModuleStates(calculateModuleStates(new ChassisSpeeds(fwdSpeed, strSpeed, rotSpeed), false));
+			strSpeed = -Math.signum(strSpeed) * (strSpeed * strSpeed) * 12.0;
+			setModuleStates(fwdSpeed, strSpeed, rotSpeed, false);
 		}).withName("RobotOrientedDriveCommand");
 	}
 
@@ -377,5 +333,15 @@ public class DriveSubsystem extends SubsystemBase {
 					new Rotation2d[] { new Rotation2d(0), new Rotation2d(0), new Rotation2d(0), new Rotation2d(0) });
 			setModuleStates(0, 0, 0, false);
 		}).raceWith(Commands.waitSeconds(5));
+	}
+
+	/**
+	 * Creates a command that drives forward for a specified time period.
+	 * 
+	 * @param seconds The amount of time to drive for.
+	 * @return The command.
+	 */
+	public Command driveForTimeCommand(double seconds) {
+		return runEnd(() -> setModuleStates(12, 0, 0, true), this::stopDriving).withTimeout(seconds);
 	}
 }

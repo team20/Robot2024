@@ -13,9 +13,9 @@ public class NinjaStarCommand extends Command {
 	private double m_xTarget;
 	private double m_yTarget;
 	private double m_targetAngle;
-	private final ClampedController m_xController = new ClampedController(0.3, 0.1, .3);
-	private final ClampedController m_yController = new ClampedController(0.3, 0.1, .3);
-	private final ClampedController m_rotController = new ClampedController(0.01, 0.1, .3);
+	private final ClampedController m_xController = new ClampedController(3.6, 1.2, 3.6);
+	private final ClampedController m_yController = new ClampedController(3.6, 1.2, 3.6);
+	private final ClampedController m_rotController = new ClampedController(0.12, 1.2, 3.6);
 
 	/**
 	 * Creates a command to drive to a point by specifying a distance and and angle

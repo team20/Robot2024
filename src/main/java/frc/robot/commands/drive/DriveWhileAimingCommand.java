@@ -177,10 +177,10 @@ public class DriveWhileAimingCommand extends Command {
 	 */
 	@Override
 	public void execute() {
-		double fwdSpeed = kTeleopMaxSpeed
+		double fwdSpeed = kTeleopMaxVoltage
 				* MathUtil.applyDeadband(m_forwardSpeed.get(), ControllerConstants.kDeadzone);
 		fwdSpeed = Math.signum(fwdSpeed) * (fwdSpeed * fwdSpeed);
-		double strSpeed = kTeleopMaxSpeed
+		double strSpeed = kTeleopMaxVoltage
 				* MathUtil.applyDeadband(m_strafeSpeed.get(), ControllerConstants.kDeadzone);
 		strSpeed = Math.signum(strSpeed) * (strSpeed * strSpeed);
 		double rotSpeed = 0;

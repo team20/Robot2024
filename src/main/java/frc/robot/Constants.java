@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -79,8 +82,8 @@ public final class Constants {
 		public static final int kBackRightCANCoderPort = 22;
 		public static final int kBackLeftCANCoderPort = 32;
 		// Swerve PID values
-		public static final double kP = 0.0075;
-		public static final double kI = 0.045;
+		public static final double kP = 0.09;
+		public static final double kI = 0.0;
 		public static final double kD = 0;
 		public static final double kIz = 5;
 
@@ -90,42 +93,42 @@ public final class Constants {
 		public static final double kDriveMaxVelocity = 7; // up to 5?
 		public static final double kDriveMaxAcceleration = 7; // up to 10?
 
-		public static final double kTurnP = 0.02; // was 0.005 upto 0.2?
+		public static final double kTurnP = 0.24; // was 0.005 upto 0.2?
 		public static final double kTurnI = 0; // was 0.003
 		public static final double kTurnD = 0; // 0.0
 		public static final double kTurnMaxVelocity = 90; // up to 240?
 		public static final double kTurnMaxAcceleration = 90; // up to 360?
 
-		/*** Distance between center of front wheel and center of back wheel */
-		public static final double kWheelBase = 21.5;
-		/*** Distance between center of left wheel and center of right wheel */
-		public static final double kTrackWidth = 21.5;
-		public static final double kSteerPeriod = 0.02;
 		// Speed multiplier to make sure the robot doesn't crash into something when
 		// testing, because crashing into people's shins would be bad
-		public static final double kMaxSpeed = 1;
-		public static final double kMinSpeed = 0.1;
-		public static final double kTeleopMaxSpeed = 1;
-		public static final double kTeleopMaxTurnSpeed = 0.6;
-		public static final double kModuleResponseTimeSeconds = 0.02;
+		public static final double kMaxSpeed = 12;
+		public static final double kMinSpeed = 1;
+		public static final double kTeleopMaxVoltage = 12;
+		public static final double kTeleopMaxTurnVoltage = 7.2;
 		public static final double kGearRatio = 6.12;
 		public static final double kWheelDiameter = Units.inchesToMeters(4);
 
 		public static final double kMotorRotationsPerMeter = (1 / kGearRatio) * (Math.PI * kWheelDiameter);
 
-		public static final Translation2d kFrontLeftLocation = new Translation2d(0.381, 0.381); // --
-		public static final Translation2d kFrontRightLocation = new Translation2d(0.381, -0.381); // +-
-		public static final Translation2d kBackLeftLocation = new Translation2d(-0.381, 0.381); // ++
-		public static final Translation2d kBackRightLocation = new Translation2d(-0.381, -0.381); // -+
+		public static final Translation2d kFrontLeftLocation = new Translation2d(0.381, 0.381);
+		public static final Translation2d kFrontRightLocation = new Translation2d(0.381, -0.381);
+		public static final Translation2d kBackLeftLocation = new Translation2d(-0.381, 0.381);
+		public static final Translation2d kBackRightLocation = new Translation2d(-0.381, -0.381);
 
 		public static final int kDriveSmartCurrentLimit = 45;
 		public static final int kDrivePeakCurrentLimit = kDriveSmartCurrentLimit + 10;
 		public static final int kSteerSmartCurrentLimit = 60;
 		public static final int kSteerPeakCurrentLimit = kSteerSmartCurrentLimit + 15;
-
 		// The amount of time to go from 0 to full power in seconds
 		public static final double kRampRate = .1; // .1
-
+		public static final TalonFXConfiguration config = new TalonFXConfiguration();
+		static {
+			config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+			config.CurrentLimits.SupplyCurrentLimit = kDrivePeakCurrentLimit;
+			config.CurrentLimits.SupplyCurrentLimitEnable = true;
+			config.ClosedLoopRamps.VoltageClosedLoopRampPeriod = kRampRate;
+			config.OpenLoopRamps.VoltageOpenLoopRampPeriod = kRampRate;
+		}
 	}
 
 	public static final class FlywheelConstants {
