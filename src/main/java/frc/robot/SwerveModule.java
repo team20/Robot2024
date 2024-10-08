@@ -20,13 +20,13 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Contains all the hardware and controllers for a swerve module.
  */
 public class SwerveModule {
-	private final PIDController m_PIDController = new PIDController(0.0030, 0, 0);
+	private final PIDController m_steerController = new PIDController(kP, kI, kD);
+	private final PIDController m_driveVelocityController = new PIDController(kVelocityP, 0, 0);
 	private final CANcoder m_CANCoder;
 	private final TalonFX m_driveMotor;
 	private final CANSparkMax m_steerMotor;
@@ -37,10 +37,10 @@ public class SwerveModule {
 		m_CANCoder = new CANcoder(CANport);
 		m_driveMotor = new TalonFX(drivePort);
 		m_steerMotor = new CANSparkMax(steerPort, MotorType.kBrushless);
-		m_PIDController.setIZone(kIz);
+		m_steerController.setIZone(kIz);
 		m_driveMotor.getConfigurator().apply(kDriveConfig);
 		configMotorController(m_steerMotor, kSteerSmartCurrentLimit, kSteerPeakCurrentLimit);
-		m_PIDController.enableContinuousInput(0, 360);
+		m_steerController.enableContinuousInput(0, 360);
 	}
 
 	/**
@@ -128,7 +128,8 @@ public class SwerveModule {
 	/**
 	 * Sets the drive motor speeds and module angle.
 	 * 
-	 * @param state The module state
+	 * @param state The module state. Note that the speedMetersPerSecond field has
+	 *              been repurposed to contain volts, not velocity.
 	 */
 	public void setModuleState(SwerveModuleState state) {
 		double power = state.speedMetersPerSecond;
@@ -143,8 +144,28 @@ public class SwerveModule {
 			power *= 0.8;
 		}
 		m_driveMotor.setVoltage(power);
-		double turnPower = m_PIDController.calculate(getModuleAngle(), state.angle.getDegrees());
+		double turnPower = m_steerController.calculate(getModuleAngle(), state.angle.getDegrees());
 		m_steerMotor.setVoltage(turnPower);
+		updateSim(power, turnPower);
+	}
+
+	/**
+	 * Sets the drive motor speeds and module angle.
+	 * 
+	 * @param state The module state. Note that the speedMetersPerSecond field
+	 *              should actually contain the module velocity in meters per
+	 *              second.
+	 */
+	public void setModuleStateClosedLoop(SwerveModuleState state) {
+		var rotPerMin = state.speedMetersPerSecond * kMotorRotationsPerMeter * 60;
+		var voltage = m_driveVelocityController.calculate(m_driveEncoder.getVelocity(), rotPerMin);
+		m_driveMotor.setVoltage(voltage);
+		double turnVoltage = m_steerController.calculate(getModuleAngle(), state.angle.getDegrees());
+		m_steerMotor.setVoltage(turnVoltage);
+		updateSim(voltage, turnVoltage);
+	}
+
+	private void updateSim(double driveVoltage, double steerVoltage) {
 		if (RobotBase.isSimulation()) {
 			var driveMotorSimState = m_driveMotor.getSimState();
 			m_driveMotorModel.setInputVoltage(driveMotorSimState.getMotorVoltage());
@@ -152,21 +173,10 @@ public class SwerveModule {
 			driveMotorSimState.setRawRotorPosition(m_driveMotorModel.getAngularPositionRotations());
 			driveMotorSimState.setRotorVelocity(m_driveMotorModel.getAngularVelocityRPM() / 60.0);
 			var encoderSimState = m_CANCoder.getSimState();
-			m_steerMotorModel.setInputVoltage(turnPower);
+			m_steerMotorModel.setInputVoltage(steerVoltage);
 			m_steerMotorModel.update(0.02);
 			encoderSimState.setRawPosition(m_steerMotorModel.getAngularPositionRotations());
 			encoderSimState.setVelocity(m_steerMotorModel.getAngularVelocityRPM());
 		}
-	}
-
-	/**
-	 * Sets the module angle.
-	 * 
-	 * @param angle
-	 */
-	public void setAngle(double angle) {
-		var out = m_PIDController.calculate(getModuleAngle(), angle);
-		SmartDashboard.putNumber("PID out" + m_driveMotor.getDeviceID(), out);
-		m_steerMotor.setVoltage(out);
 	}
 }

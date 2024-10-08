@@ -42,7 +42,7 @@ public class SimpleVisionAlignCommand extends Command {
 		// Set power using PIDController
 		double power = m_controller.calculate(currentAngle);
 		// Turn to tag using PID power
-		m_driveSubsystem.setModuleStates(0, 0, -power, false);
+		m_driveSubsystem.drive(0, 0, -power, false);
 		// SmartDashboard.putNumber("power", power);
 		// SmartDashboard.putNumber("currentAngle", currentAngle);
 

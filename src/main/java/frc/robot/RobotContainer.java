@@ -26,8 +26,6 @@ import frc.robot.commands.aimshooter.AimerDriveCommand;
 import frc.robot.commands.climber.ClimberDriveCommand;
 import frc.robot.commands.climber.ClimberPresetCommand;
 import frc.robot.commands.climber.ClimberPresetCommand.ClimberOperation;
-import frc.robot.commands.drive.DriveWhileAimingCommand;
-import frc.robot.commands.drive.PolarDriveCommand;
 import frc.robot.commands.flywheel.FlywheelCommand;
 import frc.robot.commands.flywheel.FlywheelCommand.FlywheelOperation;
 import frc.robot.commands.indexer.IndexerCommand;
@@ -92,84 +90,6 @@ public class RobotContainer {
 		m_autoSelector.addOption("Sysid Dynamic Backward", m_driveSubsystem.sysidDynamic(Direction.kReverse));
 		m_autoSelector.addOption("Sysid Quasistatic Forward", m_driveSubsystem.sysidQuasistatic(Direction.kForward));
 		m_autoSelector.addOption("Sysid Quasistatic Backward", m_driveSubsystem.sysidQuasistatic(Direction.kReverse));
-		m_autoSelector.addOption("Polar Drive Two Meters", new PolarDriveCommand(m_driveSubsystem, 2, 180));
-		m_autoSelector.addOption("Shoot and Leave Auto", CommandComposer.getShootAndLeaveAuto());
-		m_autoSelector.addOption("Middle Two Score", CommandComposer.getTwoScoreMiddleAuto());
-		m_autoSelector.addOption("Amp and Leave", CommandComposer.getAmpAndLeave());
-		// m_autoSelector.addOption("Right Two Score Blue",
-		// CommandComposer.getTwoScoreRightAutoBlue());
-		// m_autoSelector.addOption("Right Two Score Red",
-		// CommandComposer.getTwoScoreRightAutoRed());
-		// m_autoSelector.addOption("Left Two Score Blue",
-		// CommandComposer.getTwoScoreLeftAutoBlue());
-		// m_autoSelector.addOption("Left Two Score Red",
-		// CommandComposer.getTwoScoreLeftAutoRed());
-		// m_autoSelector.addOption("Right Three Score Blue",
-		// CommandComposer.getThreeScoreRightAutoBlue());
-		// m_autoSelector.addOption("Right Three Score Red",
-		// CommandComposer.getThreeScoreRightAutoRed());
-		// m_autoSelector.addOption("Left Three Score Blue",
-		// CommandComposer.getThreeScoreLeftAutoBlue());
-		// m_autoSelector.addOption("Left Three Score Red",
-		// CommandComposer.getThreeScoreLeftAutoRed());
-		// m_autoSelector.addOption("Right Four Score Blue",
-		// CommandComposer.getFourScoreRightAutoBlue());
-		// m_autoSelector.addOption("Right Four Score Red",
-		// CommandComposer.getFourScoreRightAutoRed());
-		// m_autoSelector.addOption("Left Four Score Blue",
-		// CommandComposer.getFourScoreLeftAutoBlue());
-		// m_autoSelector.addOption("Left Four Score Red",
-		// CommandComposer.getFourScoreLeftAutoRed());
-		// m_autoSelector.addOption("Five Score RED Auto (Start on Left)",
-		// CommandComposer.getFiveScoreRedAutoCommand());
-		m_autoSelector.addOption("Five Score BLUE Auto (Start on Right)",
-				CommandComposer.getFiveScoreBlue321C1());
-		m_autoSelector.addOption("Five Score RED Auto (Start on Left)",
-				CommandComposer.getFiveScoreRed321C1());
-		m_autoSelector.addOption("Four Score @red 3, middle 5, and middle 4 RED Auto (Start on Left)",
-				CommandComposer.getTwoMiddleFourScoreRedCommand());
-		m_autoSelector.addOption("Four Score @blue 3, middle 5, and middle 4 BLUE Auto (Start on Right)",
-				CommandComposer.getTwoMiddleFourScoreBlueCommand());
-		m_autoSelector.addOption("Four Score @middle 3, middle 4, and middle 5 RED Auto (Start on Left)",
-				CommandComposer.getThreeMiddleFourScoreRedCommand());
-		m_autoSelector.addOption("Four Score @middle 3, middle 4, and middle 5 BLUE Auto (Start on Right)",
-				CommandComposer.getThreeMiddleFourScoreBlueCommand());
-		m_autoSelector.addOption("Three Score @middle 4 and middle 5 BLUE Auto (Start on Right, New)",
-				CommandComposer.getThreeScoreBlueC4C5());
-		m_autoSelector.addOption("Three Score @middle 4 and middle 5 RED Auto (Start on Right, New)",
-				CommandComposer.getThreeScoreRedC4C5());
-		// m_autoSelector.addOption("Three Score @middle 4 and middle 5 BLUE Auto (Start
-		// on Right)",
-		// CommandComposer.getThreeScoreTwoMiddleBottomBlueAuto());
-		// m_autoSelector.addOption("Three Score @middle 4 and middle 5 RED Auto (Start
-		// on Right)",
-		// CommandComposer.getThreeScoreTwoMiddleBottomRedAuto());
-		m_autoSelector.addOption("Four Score @blue1, middle 1, and middle 2 BLUE Auto (Start on Left)",
-				CommandComposer.getFourScoreTwoMiddleTopBlueAuto());
-		m_autoSelector.addOption("Four Score @red 1, middle 1, and middle 2 RED Auto (Start on Right)",
-				CommandComposer.getFourScoreTwoMiddleTopRedAuto());
-		m_autoSelector.addOption("Just leave", new PolarDriveCommand(m_driveSubsystem, 3, 180));
-		m_autoSelector.addOption("Five Score BLUE Auto @blue 3, 2, 1, and Middle 2 BLUE",
-				CommandComposer.getFiveScoreBlue321C2());
-		m_autoSelector.addOption("Greecy 3 Score center 4 center 5 RED",
-				CommandComposer.getThreeScoreRedC4C5Greece());
-		m_autoSelector.addOption("Greecy 3 Score center 4 center 5 BLUE",
-				CommandComposer.getThreeScoreBlueC4C5Greece());
-		// m_autoSelector.addOption("Get Blocks Auto", CommandComposer.getBlocksAuto());
-		// m_autoSelector.addOption("Get Amp Auto Red",
-		// CommandComposer.getAmpTwoAutoRed());
-		// m_autoSelector.addOption("Get Amp Auto Blue",
-		// CommandComposer.getAmpTwoAutoBlue());
-		// m_autoSelector.addOption("Get Shoot and Amp Auto",
-		// CommandComposer.getShootAndAmp());
-		// m_autoSelector.addOption("Absolute to Zero", new
-		// TurnToAngleCommand(m_driveSubsystem, 0, 0.5, false));
-		// m_autoSelector.addOption("Intake With Sensor",
-		// CommandComposer.getIntakeWithSensorCommand());
-		// m_autoSelector.addOption("Intake With Sensor and Pneumatics",
-		// CommandComposer.getTeleopIntakeCommand());
-		// m_autoSelector.addOption("Ninja Star Command", new
-		// NinjaStarCommand(m_driveSubsystem, 2, -2, 45));
 		SmartDashboard.putData(m_autoSelector);
 		configureButtonBindings();
 	}
@@ -212,19 +132,6 @@ public class RobotContainer {
 		m_driverController.button(Button.kOptions).onTrue(m_driveSubsystem.resetHeadingCommand());
 		// D RIGHT BUMPER - Aim and Shoot
 		// m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getAimAndShootCommand())
-
-		m_driverController.button(Button.kRightBumper)
-				.whileTrue(new DriveWhileAimingCommand(() -> m_driverController.getRawAxis(Axis.kLeftY),
-						() -> m_driverController.getRawAxis(Axis.kLeftX), 5, 0.2, 0.5, m_driveSubsystem,
-						m_aimerSubsystem,
-						m_targeter, m_flywheelSubsystem, m_arduinoSubsystem, m_limeLightSubsystem))
-				// m_driverController.button(Button.kRightBumper).whileTrue(CommandComposer.getDriveWhileAimingCommand(
-				// () -> m_driverController.getRawAxis(Axis.kLeftY),
-				// () -> m_driverController.getRawAxis(Axis.kLeftX), 5))
-				.onFalse(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SET_PRESET_DEFAULT)
-						.andThen(new AimHeightCommand(m_aimerSubsystem, m_targeter, AimHeightOperation.SETTLE))
-						.alongWith(m_flywheelSubsystem.stopFlywheel())
-						.alongWith(m_arduinoSubsystem.writeStatus(StatusCode.DEFAULT)));
 		// TODO: please check if the addition of the following will not cause any
 		// problem. If added, it will enable aimingToAmpCorner
 		// m_driverController.button(Button.kLeftBumper)

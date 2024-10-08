@@ -82,6 +82,7 @@ public final class Constants {
 		public static final int kBackRightCANCoderPort = 22;
 		public static final int kBackLeftCANCoderPort = 32;
 		// Swerve PID values
+		public static final double kVelocityP = 0.09;
 		public static final double kP = 0.09;
 		public static final double kI = 0.0;
 		public static final double kD = 0;
@@ -99,10 +100,7 @@ public final class Constants {
 		public static final double kTurnMaxVelocity = 90; // up to 240?
 		public static final double kTurnMaxAcceleration = 90; // up to 360?
 
-		// Speed multiplier to make sure the robot doesn't crash into something when
-		// testing, because crashing into people's shins would be bad
-		public static final double kMaxSpeed = 12;
-		public static final double kMinSpeed = 1;
+		public static final double kMaxDrivetrainVelocity = 7; // m/s
 		public static final double kTeleopMaxVoltage = 12;
 		public static final double kTeleopMaxTurnVoltage = 7.2;
 		public static final double kGearRatio = 6.12;
