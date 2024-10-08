@@ -10,7 +10,9 @@ import java.util.function.Supplier;
 
 import com.kauailabs.navx.frc.AHRS;
 
+import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -44,6 +46,9 @@ public class DriveSubsystem extends SubsystemBase {
 	private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
 	private Rotation2d m_heading = new Rotation2d();
 	private final SysIdRoutine m_sysidRoutine;
+	private final PIDController m_xController = new PIDController(0, 0, 0);
+	private final PIDController m_yController = new PIDController(0, 0, 0);
+	private final PIDController m_headingController = new PIDController(0, 0, 0);
 
 	private final ProtobufPublisher<Pose2d> m_posePublisher;
 	private final StructArrayPublisher<SwerveModuleState> m_targetModuleStatePublisher;
@@ -191,8 +196,11 @@ public class DriveSubsystem extends SubsystemBase {
 		drive(new ChassisSpeeds(speedFwd, speedSide, speedRot), isFieldRelative, true);
 	}
 
-	public void followTrajectory(Pose2d pose) {
-		drive(new ChassisSpeeds(), true, false);
+	public void followTrajectory(Pose2d pose, SwerveSample sample) {
+		var vx = m_xController.calculate(pose.getX(), sample.x) + sample.vx;
+		var vy = m_yController.calculate(pose.getY(), sample.y) + sample.vy;
+		var omega = m_headingController.calculate(pose.getRotation().getRadians(), sample.heading) + sample.omega;
+		drive(new ChassisSpeeds(vx, vy, omega), true, false);
 	}
 
 	@Override
