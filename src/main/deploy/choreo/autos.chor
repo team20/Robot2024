@@ -1,0 +1,139 @@
+{
+ "name":"autos",
+ "version":"v2025.0.0",
+ "type":"Swerve",
+ "variables":{
+  "expressions":{
+   "stageRad":{
+    "dimension":"Length",
+    "var":{
+     "exp":"0.45 m",
+     "val":0.45
+    }
+   }
+  },
+  "poses":{
+   "start":{
+    "x":{
+     "exp":"0.9 m",
+     "val":0.9
+    },
+    "y":{
+     "exp":"4.3 m",
+     "val":4.3
+    },
+    "heading":{
+     "exp":"-60 deg",
+     "val":-1.0471975511965976
+    }
+   },
+   "spkr":{
+    "x":{
+     "exp":"0.25 m",
+     "val":0.25
+    },
+    "y":{
+     "exp":"5.55 m",
+     "val":5.55
+    },
+    "heading":{
+     "exp":"0 rad",
+     "val":0.0
+    }
+   },
+   "mid":{
+    "x":{
+     "exp":"5.5 m",
+     "val":5.5
+    },
+    "y":{
+     "exp":"1.5 m",
+     "val":1.5
+    },
+    "heading":{
+     "exp":"0 rad",
+     "val":0.0
+    }
+   },
+   "stage":{
+    "x":{
+     "exp":"5.6 m",
+     "val":5.6
+    },
+    "y":{
+     "exp":"2.8 m",
+     "val":2.8
+    },
+    "heading":{
+     "exp":"0 rad",
+     "val":0.0
+    }
+   }
+  }
+ },
+ "config":{
+  "frontLeft":{
+   "x":{
+    "exp":"12 in",
+    "val":0.30479999999999996
+   },
+   "y":{
+    "exp":"12 in",
+    "val":0.30479999999999996
+   }
+  },
+  "backLeft":{
+   "x":{
+    "exp":"-12 in",
+    "val":-0.30479999999999996
+   },
+   "y":{
+    "exp":"12 in",
+    "val":0.30479999999999996
+   }
+  },
+  "mass":{
+   "exp":"125 lbs",
+   "val":56.69904625
+  },
+  "inertia":{
+   "exp":"1 / 12 * 165 lb * 2 * (30 in) ^ 2",
+   "val":7.2428314223727
+  },
+  "gearing":{
+   "exp":"6.12",
+   "val":6.12
+  },
+  "radius":{
+   "exp":"4 in",
+   "val":0.1016
+  },
+  "vmax":{
+   "exp":"492.60172808287956 rad / s",
+   "val":492.6017280828795
+  },
+  "tmax":{
+   "exp":"0.8154696132596685 N m",
+   "val":0.8154696132596685
+  },
+  "bumper":{
+   "front":{
+    "exp":"16 in",
+    "val":0.4064
+   },
+   "side":{
+    "exp":"16 in",
+    "val":0.4064
+   },
+   "back":{
+    "exp":"16 in",
+    "val":0.4064
+   }
+  },
+  "differentialTrackWidth":{
+   "exp":"22 in",
+   "val":0.5588
+  }
+ },
+ "generationFeatures":[]
+}

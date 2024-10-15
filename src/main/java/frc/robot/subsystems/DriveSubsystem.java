@@ -10,6 +10,9 @@ import java.util.function.Supplier;
 
 import com.kauailabs.navx.frc.AHRS;
 
+import choreo.Choreo;
+import choreo.auto.AutoFactory;
+import choreo.auto.AutoFactory.AutoBindings;
 import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -23,6 +26,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.ProtobufPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI;
@@ -43,6 +47,7 @@ public class DriveSubsystem extends SubsystemBase {
 	private final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
 			kFrontLeftLocation, kFrontRightLocation, kBackLeftLocation, kBackRightLocation);
 	private final SwerveDriveOdometry m_odometry;
+	private SwerveModulePosition[] m_lastModulePositions;
 	private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
 	private Rotation2d m_heading = new Rotation2d();
 	private final SysIdRoutine m_sysidRoutine;
@@ -51,23 +56,34 @@ public class DriveSubsystem extends SubsystemBase {
 	private final PIDController m_headingController = new PIDController(0, 0, 0);
 
 	private final ProtobufPublisher<Pose2d> m_posePublisher;
+	private final StructPublisher<ChassisSpeeds> m_targetChassisSpeedsPublisher;
 	private final StructArrayPublisher<SwerveModuleState> m_targetModuleStatePublisher;
+	private final StructArrayPublisher<SwerveModulePosition> m_targetModulePositionPublisher;
 	private final StructArrayPublisher<SwerveModuleState> m_currentModuleStatePublisher;
 
 	/** Creates a new DriveSubsystem. */
 	public DriveSubsystem() {
 		m_posePublisher = NetworkTableInstance.getDefault().getProtobufTopic("/SmartDashboard/Pose", Pose2d.proto)
 				.publish();
+		m_targetChassisSpeedsPublisher = NetworkTableInstance.getDefault()
+				.getStructTopic("/SmartDashboard/Target Chassis Speeds", ChassisSpeeds.struct).publish();
 		m_targetModuleStatePublisher = NetworkTableInstance.getDefault()
 				.getStructArrayTopic("/SmartDashboard/Target Swerve Modules States", SwerveModuleState.struct)
+				.publish();
+		m_targetModulePositionPublisher = NetworkTableInstance.getDefault()
+				.getStructArrayTopic("/SmartDashboard/Swerve Module Positions", SwerveModulePosition.struct)
 				.publish();
 		m_currentModuleStatePublisher = NetworkTableInstance.getDefault()
 				.getStructArrayTopic("/SmartDashboard/Current Swerve Modules States", SwerveModuleState.struct)
 				.publish();
-		m_frontLeft = new SwerveModule(kFrontLeftCANCoderPort, kFrontLeftDrivePort, kFrontLeftSteerPort);
-		m_frontRight = new SwerveModule(kFrontRightCANCoderPort, kFrontRightDrivePort, kFrontRightSteerPort);
-		m_backLeft = new SwerveModule(kBackLeftCANCoderPort, kBackLeftDrivePort, kBackLeftSteerPort);
-		m_backRight = new SwerveModule(kBackRightCANCoderPort, kBackRightDrivePort, kBackRightSteerPort);
+		m_frontLeft = new SwerveModule(kFrontLeftCANCoderPort, kFrontLeftDrivePort, kFrontLeftSteerPort, kvFrontLeft,
+				kaFrontLeft);
+		m_frontRight = new SwerveModule(kFrontRightCANCoderPort, kFrontRightDrivePort, kFrontRightSteerPort,
+				kvFrontRight, kaFrontRight);
+		m_backLeft = new SwerveModule(kBackLeftCANCoderPort, kBackLeftDrivePort, kBackLeftSteerPort, kvBackLeft,
+				kaBackLeft);
+		m_backRight = new SwerveModule(kBackRightCANCoderPort, kBackRightDrivePort, kBackRightSteerPort, kvBackRight,
+				kaBackRight);
 		var config = new SysIdRoutine.Config(Units.Volts.of(2.5).per(Units.Seconds.of(1)), null, Units.Seconds.of(3));
 		m_sysidRoutine = new SysIdRoutine(config, new SysIdRoutine.Mechanism(volt -> {
 			var state = new SwerveModuleState(volt.magnitude(), new Rotation2d(Math.PI / 2));
@@ -85,6 +101,7 @@ public class DriveSubsystem extends SubsystemBase {
 			e.printStackTrace();
 		}
 		m_odometry = new SwerveDriveOdometry(m_kinematics, getHeading(), getModulePositions());
+		m_lastModulePositions = getModulePositions();
 	}
 
 	/**
@@ -144,15 +161,8 @@ public class DriveSubsystem extends SubsystemBase {
 				m_backLeft.getModulePosition(), m_backRight.getModulePosition() };
 	}
 
-	/**
-	 * Drives the robot.
-	 * 
-	 * @param speeds          The chassis speeds.
-	 * @param isFieldRelative Whether or not the chassis speeds are field-relative.
-	 * @param isOpenLoop      Whether or not the modules will use open-loop control
-	 *                        (no PID on drive motors).
-	 */
-	public void drive(ChassisSpeeds speeds, boolean isFieldRelative, boolean isOpenLoop) {
+	public SwerveModuleState[] calculateModuleStates(ChassisSpeeds speeds, boolean isFieldRelative,
+			boolean isOpenLoop) {
 		if (isFieldRelative) {
 			speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getHeading());
 		}
@@ -169,19 +179,23 @@ public class DriveSubsystem extends SubsystemBase {
 			// Optimize target module states
 			states[i] = SwerveModuleState.optimize(states[i], Rotation2d.fromDegrees(moduleAngles[i]));
 		}
-		m_targetModuleStatePublisher.set(states);
+		return states;
+	}
 
-		if (isOpenLoop) {
-			m_frontLeft.setModuleState(states[0]);
-			m_frontRight.setModuleState(states[1]);
-			m_backLeft.setModuleState(states[2]);
-			m_backRight.setModuleState(states[3]);
-		} else {
-			m_frontLeft.setModuleStateClosedLoop(states[0]);
-			m_frontRight.setModuleStateClosedLoop(states[1]);
-			m_backLeft.setModuleStateClosedLoop(states[2]);
-			m_backRight.setModuleStateClosedLoop(states[3]);
-		}
+	/**
+	 * Drives the robot.
+	 * 
+	 * @param speeds          The chassis speeds.
+	 * @param isFieldRelative Whether or not the chassis speeds are field-relative.
+	 * @param isOpenLoop      Whether or not the modules will use open-loop control
+	 *                        (no PID on drive motors).
+	 */
+	public void setModuleStates(SwerveModuleState[] states) {
+		m_targetModuleStatePublisher.set(states);
+		m_frontLeft.setModuleState(states[0]);
+		m_frontRight.setModuleState(states[1]);
+		m_backLeft.setModuleState(states[2]);
+		m_backRight.setModuleState(states[3]);
 	}
 
 	/**
@@ -193,14 +207,29 @@ public class DriveSubsystem extends SubsystemBase {
 	 * @param isFieldRelative Whether or not the speeds are relative to the field
 	 */
 	public void drive(double speedFwd, double speedSide, double speedRot, boolean isFieldRelative) {
-		drive(new ChassisSpeeds(speedFwd, speedSide, speedRot), isFieldRelative, true);
+		setModuleStates(calculateModuleStates(new ChassisSpeeds(speedFwd, speedSide, speedRot), isFieldRelative, true));
 	}
 
 	public void followTrajectory(Pose2d pose, SwerveSample sample) {
 		var vx = m_xController.calculate(pose.getX(), sample.x) + sample.vx;
 		var vy = m_yController.calculate(pose.getY(), sample.y) + sample.vy;
 		var omega = m_headingController.calculate(pose.getRotation().getRadians(), sample.heading) + sample.omega;
-		drive(new ChassisSpeeds(vx, vy, omega), true, false);
+		var speeds = new ChassisSpeeds(vx, vy, omega);
+		var moduleSpeeds = calculateModuleStates(speeds, true, false);
+		var moduleAccels = calculateModuleStates(new ChassisSpeeds(sample.ax, sample.ay, sample.alpha), true, false);
+		var states = new SwerveModuleState[4];
+		m_targetChassisSpeedsPublisher.set(speeds);
+		states[0] = m_frontLeft.setModuleStateClosedLoop(moduleSpeeds[0], moduleAccels[0].speedMetersPerSecond);
+		states[1] = m_frontRight.setModuleStateClosedLoop(moduleSpeeds[1], moduleAccels[1].speedMetersPerSecond);
+		states[2] = m_backLeft.setModuleStateClosedLoop(moduleSpeeds[2], moduleAccels[2].speedMetersPerSecond);
+		states[3] = m_backRight.setModuleStateClosedLoop(moduleSpeeds[3], moduleAccels[3].speedMetersPerSecond);
+		m_targetModuleStatePublisher.set(states);
+		m_heading = new Rotation2d(omega * 0.02).plus(m_heading);
+	}
+
+	public AutoFactory autoFactory() {
+		return Choreo.createAutoFactory(this, this::getPose, this::followTrajectory,
+				() -> false, new AutoBindings());
 	}
 
 	@Override
@@ -210,6 +239,7 @@ public class DriveSubsystem extends SubsystemBase {
 		SmartDashboard.putNumber("Heading Degrees", getHeading().getDegrees());
 		SmartDashboard.putNumber("Heading Radians", getHeading().getRadians());
 		m_posePublisher.set(m_odometry.update(getHeading(), getModulePositions()));
+		m_targetModulePositionPublisher.set(getModulePositions());
 		SwerveModuleState[] states = { m_frontLeft.getModuleState(), m_frontRight.getModuleState(),
 				m_backLeft.getModuleState(), m_backRight.getModuleState() };
 		m_currentModuleStatePublisher.set(states);
@@ -270,6 +300,13 @@ public class DriveSubsystem extends SubsystemBase {
 	 */
 	public Command resetHeadingCommand() {
 		return runOnce(m_gyro::zeroYaw);
+	}
+
+	public Command resetOdometryCommand(Pose2d pose) {
+		return runOnce(() -> {
+			m_odometry.resetPosition(getHeading(), getModulePositions(), pose);
+			m_heading = pose.getRotation();
+		});
 	}
 
 	/**

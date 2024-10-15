@@ -2,6 +2,8 @@ package frc.robot;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
+import choreo.auto.AutoTrajectory;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.indexer.IndexWithSensorCommand;
@@ -46,6 +48,21 @@ public class CommandComposer {
 		m_flywheelSubsystem = flywheelSubsystem;
 		m_intakeSubsystem = intakeSubsystem;
 		m_limeLightSubsystem = limeLightSubsystem;
+	}
+
+	public static Command getThreeScoreAuto() {
+		final var factory = m_driveSubsystem.autoFactory();
+
+		final AutoTrajectory speakerToLeftNote = factory.trajectory("Better 3 score auto", 0, factory.voidLoop());
+		final Command leftNoteToLaunch = factory.trajectoryCommand("Better 3 score auto", 1);
+		final Command launchToRightNote = factory.trajectoryCommand("Better 3 score auto", 2);
+		final Command rightNoteToLaunch = factory.trajectoryCommand("Better 3 score auto", 3);
+		return sequence(
+				m_driveSubsystem.resetOdometryCommand(speakerToLeftNote.getInitialPose().orElseGet(Pose2d::new)),
+				speakerToLeftNote.cmd(),
+				leftNoteToLaunch,
+				launchToRightNote,
+				rightNoteToLaunch);
 	}
 
 	public static Command getIntakeWithSensorCommand() {

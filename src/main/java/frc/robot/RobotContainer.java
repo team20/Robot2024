@@ -90,6 +90,7 @@ public class RobotContainer {
 		m_autoSelector.addOption("Sysid Dynamic Backward", m_driveSubsystem.sysidDynamic(Direction.kReverse));
 		m_autoSelector.addOption("Sysid Quasistatic Forward", m_driveSubsystem.sysidQuasistatic(Direction.kForward));
 		m_autoSelector.addOption("Sysid Quasistatic Backward", m_driveSubsystem.sysidQuasistatic(Direction.kReverse));
+		m_autoSelector.addOption("Better 3 Score Auto", CommandComposer.getThreeScoreAuto());
 		SmartDashboard.putData(m_autoSelector);
 		configureButtonBindings();
 	}

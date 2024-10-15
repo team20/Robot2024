@@ -6,6 +6,7 @@ package frc.robot;
 
 import static frc.robot.Constants.DriveConstants.*;
 
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.CANSparkBase.IdleMode;
@@ -13,27 +14,37 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Contains all the hardware and controllers for a swerve module.
  */
 public class SwerveModule {
 	private final PIDController m_steerController = new PIDController(kP, kI, kD);
-	private final PIDController m_driveVelocityController = new PIDController(kVelocityP, 0, 0);
+	private final PIDController m_driveVelocityController = new PIDController(0, 0, 0);
 	private final CANcoder m_CANCoder;
 	private final TalonFX m_driveMotor;
 	private final CANSparkMax m_steerMotor;
-	private final DCMotorSim m_driveMotorModel = new DCMotorSim(DCMotor.getKrakenX60(1), 1, 0.0005);
-	private final DCMotorSim m_steerMotorModel = new DCMotorSim(DCMotor.getNEO(1), 1, 0.00025);
+	private final DCMotorSim m_driveMotorModel;
+	private final SimpleMotorFeedforward m_feedforward;
+	private final DCMotorSim m_steerMotorModel = new DCMotorSim(DCMotor.getNEO(1), 6, 0.00025);
 
-	public SwerveModule(int CANport, int drivePort, int steerPort) {
+	public SwerveModule(int CANport, int drivePort, int steerPort, double kv, double ka) {
+		m_driveMotorModel = new DCMotorSim(
+				LinearSystemId.createDCMotorSystem(kv * 60 / (2 * Math.PI), ka * 60 / (2 * Math.PI)),
+				DCMotor.getKrakenX60(1), 1);
+		m_feedforward = new SimpleMotorFeedforward(0, kv * 60 * kMotorRotationsPerMeter,
+				ka * 60 * kMotorRotationsPerMeter);
+		System.out.println(kv * 60 * kMotorRotationsPerMeter);
 		m_CANCoder = new CANcoder(CANport);
 		m_driveMotor = new TalonFX(drivePort);
 		m_steerMotor = new CANSparkMax(steerPort, MotorType.kBrushless);
@@ -62,7 +73,7 @@ public class SwerveModule {
 	 * @return The position
 	 */
 	public double getDriveEncoderPosition() {
-		return m_driveMotor.getPosition().getValueAsDouble() * kMotorRotationsPerMeter;
+		return m_driveMotor.getPosition().getValueAsDouble() / kMotorRotationsPerMeter;
 	}
 
 	public double getSteerCurrent() {
@@ -156,20 +167,27 @@ public class SwerveModule {
 	 *              should actually contain the module velocity in meters per
 	 *              second.
 	 */
-	public void setModuleStateClosedLoop(SwerveModuleState state) {
-		var rotPerMin = state.speedMetersPerSecond * kMotorRotationsPerMeter * 60;
-		var voltage = m_driveVelocityController.calculate(m_driveEncoder.getVelocity(), rotPerMin);
-		m_driveMotor.setVoltage(voltage);
+	public SwerveModuleState setModuleStateClosedLoop(SwerveModuleState state, double accel) {
+		var rotPerSec = state.speedMetersPerSecond;
+		var ff = m_feedforward.calculate(rotPerSec, accel);
+		var voltage = m_driveVelocityController.calculate(m_driveMotor.getVelocity().getValueAsDouble(), rotPerSec)
+				+ ff;
+		SmartDashboard.putNumber("rotPerSec", rotPerSec);
+		SmartDashboard.putNumber("ff", ff);
+		m_driveMotor.setControl(new VoltageOut(voltage));
 		double turnVoltage = m_steerController.calculate(getModuleAngle(), state.angle.getDegrees());
 		m_steerMotor.setVoltage(turnVoltage);
 		updateSim(voltage, turnVoltage);
+		return new SwerveModuleState(voltage, state.angle);
 	}
 
 	private void updateSim(double driveVoltage, double steerVoltage) {
 		if (RobotBase.isSimulation()) {
 			var driveMotorSimState = m_driveMotor.getSimState();
-			m_driveMotorModel.setInputVoltage(driveMotorSimState.getMotorVoltage());
+			m_driveMotorModel.setInputVoltage(driveVoltage);
 			m_driveMotorModel.update(0.02);
+			SmartDashboard.putNumber("Model Vel " + m_driveMotor.getDeviceID(),
+					m_driveMotorModel.getAngularVelocityRadPerSec() / (2 * Math.PI) / kMotorRotationsPerMeter);
 			driveMotorSimState.setRawRotorPosition(m_driveMotorModel.getAngularPositionRotations());
 			driveMotorSimState.setRotorVelocity(m_driveMotorModel.getAngularVelocityRPM() / 60.0);
 			var encoderSimState = m_CANCoder.getSimState();
