@@ -304,8 +304,10 @@ public class DriveSubsystem extends SubsystemBase {
 
 	public Command resetOdometryCommand(Pose2d pose) {
 		return runOnce(() -> {
+			if (RobotBase.isSimulation()) {
+				m_heading = pose.getRotation();
+			}
 			m_odometry.resetPosition(getHeading(), getModulePositions(), pose);
-			m_heading = pose.getRotation();
 		});
 	}
 
