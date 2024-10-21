@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.AimerConstants.*;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -9,9 +11,11 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkLimitSwitch;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.ClampedController;
 import frc.robot.Constants.AimerConstants;
+import frc.robot.Targeter;
 
 public class AimerSubsystem extends SubsystemBase {
 	private final CANSparkMax m_neoAimer = new CANSparkMax(AimerConstants.kAimerLeadScrewPort,
@@ -20,6 +24,22 @@ public class AimerSubsystem extends SubsystemBase {
 	private final CANcoder m_aimCancoder = new CANcoder(AimerConstants.kAimerEncoderPort);
 	private double m_aimerHeightSetpoint;
 	private boolean m_isManual;
+
+	public enum AimHeightOperation {
+		CALC_AND_SET, // Calculate Angle at current position (changes)
+		SET_PRESET_DEFAULT, // For checkout, set shooter down (static)
+		PRESET_AMP,
+		SET_LOW,
+		PRESET_SUBWOOFER,
+		PRESET_PASS,
+		HOLD,
+		DOWN_ADJUST, // Fine tune down
+		UP_ADJUST, // Fine tune up
+		SETTLE, // Paired with above in Robot Container
+		STOP, // Currently not in use (??)
+		SOURCE,
+		PRESET_PODIUM
+	}
 
 	/**
 	 * Initializes a new instance of the {@link AimerSubsystem} class.
@@ -99,5 +119,41 @@ public class AimerSubsystem extends SubsystemBase {
 
 	public void setManual(boolean isManual) {
 		m_isManual = isManual;
+	}
+
+	public Command aimHeightCommand(AimHeightOperation operation, Targeter targeter, DoubleSupplier distanceSupplier) {
+		return startEnd(() -> {
+			switch (operation) {
+				case SET_PRESET_DEFAULT -> setAimerHeight(kDefaultActuatorHeight);
+				case PRESET_SUBWOOFER -> setAimerHeight(kSubwooferActuatorHeight);
+				case PRESET_AMP -> setAimerHeight(kAmpActuatorHeight);
+				case SOURCE -> setAimerHeight(kDefaultActuatorHeight);
+				case PRESET_PASS -> setAimerHeight(kPassActuatorHeight);
+				case SET_LOW -> setAimerHeight(0.2);
+				case HOLD -> setAimerHeight(getAimerHeight());
+				case STOP -> setAimerHeight(getAimerHeight());
+				case CALC_AND_SET -> {
+					// if the distance cannot be figured out, use 3m as the default distance
+					double distanceToSpeaker;
+					try {
+						distanceToSpeaker = distanceSupplier.getAsDouble();
+					} catch (Exception NullPointerException) {
+						distanceToSpeaker = 3.0;
+					}
+					double actuatorHeightSetpoint = targeter.getAngle(distanceToSpeaker);
+					setAimerHeight(actuatorHeightSetpoint);
+				}
+				default -> {
+				}
+			}
+		}, this::stopMotor).until(this::atAimerSetpoint);
+	}
+
+	public Command aimHeightCommand(AimHeightOperation operation, Targeter targeter) {
+		if (operation != AimHeightOperation.CALC_AND_SET) {
+			return aimHeightCommand(operation, targeter, null);
+		} else {
+			throw new IllegalArgumentException("CALC_AND_SET needs a distance supplier!");
+		}
 	}
 }

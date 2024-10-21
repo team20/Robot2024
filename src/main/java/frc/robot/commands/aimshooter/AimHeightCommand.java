@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Targeter;
 import frc.robot.subsystems.AimerSubsystem;
+import frc.robot.subsystems.AimerSubsystem.AimHeightOperation;
 import frc.robot.subsystems.LimeLightSubsystem;
 
 public class AimHeightCommand extends Command {
@@ -20,22 +21,6 @@ public class AimHeightCommand extends Command {
 	private AimerSubsystem m_aimerSubsystem;
 	private Targeter m_targeter;
 	private Supplier<Double> m_distanceSupplier;
-
-	public enum AimHeightOperation {
-		CALC_AND_SET, // Calculate Angle at current position (changes)
-		SET_PRESET_DEFAULT, // For checkout, set shooter down (static)
-		PRESET_AMP,
-		SET_LOW,
-		PRESET_SUBWOOFER,
-		PRESET_PASS,
-		HOLD,
-		DOWN_ADJUST, // Fine tune down
-		UP_ADJUST, // Fine tune up
-		SETTLE, // Paired with above in Robot Container
-		STOP, // Currently not in use (??)
-		SOURCE,
-		PRESET_PODIUM
-	}
 
 	/** Creates a new AimCommand. */
 	public AimHeightCommand(AimerSubsystem subsystem, Targeter targeter, AimHeightOperation operation) {

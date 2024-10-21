@@ -114,6 +114,13 @@ public class FlywheelSubsystem extends SubsystemBase {
 		m_neoControllerTop.setReference(m_setVelocity, ControlType.kVelocity);
 	}
 
+	public Command spinCommand(double topVelocity, double bottomVelocity) {
+		return run(() -> {
+			setBottomVelocity(topVelocity);
+			setBottomVelocity(bottomVelocity);
+		}).until(this::atSetpoint);
+	}
+
 	/**
 	 * @return Whether the flywheel is at its setpoint ABOVE 0
 	 */

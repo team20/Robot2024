@@ -2,12 +2,17 @@ package frc.robot;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
+import java.util.function.Supplier;
+
+import choreo.auto.AutoLoop;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Targeter.RegressionTargeter;
 import frc.robot.commands.indexer.IndexWithSensorCommand;
+import frc.robot.commands.indexer.IndexerCommand;
 import frc.robot.subsystems.AimerSubsystem;
+import frc.robot.subsystems.AimerSubsystem.AimHeightOperation;
 import frc.robot.subsystems.ArduinoSubsystem;
 import frc.robot.subsystems.ArduinoSubsystem.StatusCode;
 import frc.robot.subsystems.DriveSubsystem;
@@ -50,19 +55,52 @@ public class CommandComposer {
 		m_limeLightSubsystem = limeLightSubsystem;
 	}
 
+	private static Supplier<Pose2d> autoStopper(AutoLoop loop) {
+		return () -> {
+			loop.kill();
+			return new Pose2d();
+		};
+	}
+
 	public static Command getThreeScoreAuto() {
 		final var factory = m_driveSubsystem.autoFactory();
 
-		final AutoTrajectory speakerToLeftNote = factory.trajectory("Better 3 score auto", 0, factory.voidLoop());
-		final Command leftNoteToLaunch = factory.trajectoryCommand("Better 3 score auto", 1);
-		final Command launchToRightNote = factory.trajectoryCommand("Better 3 score auto", 2);
-		final Command rightNoteToLaunch = factory.trajectoryCommand("Better 3 score auto", 3);
-		return sequence(
-				m_driveSubsystem.resetOdometryCommand(speakerToLeftNote.getInitialPose().orElseGet(Pose2d::new)),
-				speakerToLeftNote.cmd(),
-				leftNoteToLaunch,
-				launchToRightNote,
-				rightNoteToLaunch);
+		final var loop = factory.newLoop("Better 3 score auto");
+
+		final AutoTrajectory speakerToLeftNote = factory.trajectory("Better 3 score auto", 0, loop);
+		final AutoTrajectory leftNoteToLaunch = factory.trajectory("Better 3 score auto", 1, loop);
+		final AutoTrajectory launchToRightNote = factory.trajectory("Better 3 score auto", 2, loop);
+		final AutoTrajectory rightNoteToLaunch = factory.trajectory("Better 3 score auto", 3, loop);
+
+		loop.enabled()
+				.onTrue(
+						parallel(
+								sequence(
+										m_driveSubsystem.resetOdometryCommand(
+												speakerToLeftNote.getInitialPose().orElseGet(autoStopper(loop))),
+										speakerToLeftNote.cmd()),
+								m_pneumaticsSubsystem.downIntakeCommand(),
+								m_intakeSubsystem.forwardIntakeCommand()));
+		speakerToLeftNote.done()
+				.onTrue(
+						sequence(
+								parallel(
+										leftNoteToLaunch.cmd(),
+										// TODO: Figure out good height
+										m_aimerSubsystem.aimHeightCommand(AimHeightOperation.PRESET_PODIUM, m_targeter),
+										// TODO: Figure out good speed
+										m_flywheelSubsystem.spinCommand(8000, 8000)),
+								m_intakeSubsystem.stopIntakeCommand()));
+
+		leftNoteToLaunch.done()
+				.onTrue(
+						sequence(
+								IndexerCommand.getFowardCommand(m_indexerSubsystem),
+								launchToRightNote.cmd(),
+								m_intakeSubsystem.forwardIntakeCommand()));
+		launchToRightNote.done().onTrue(rightNoteToLaunch.cmd()); // Already set up aimer and flywheel
+		rightNoteToLaunch.done().onTrue(IndexerCommand.getFowardCommand(m_indexerSubsystem));
+		return loop.cmd();
 	}
 
 	public static Command getIntakeWithSensorCommand() {
